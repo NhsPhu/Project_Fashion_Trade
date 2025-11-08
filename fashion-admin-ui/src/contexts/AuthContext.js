@@ -1,6 +1,14 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AuthService from '../services/AuthService';
-import axios from 'axios'; // Import axios để cấu hình global
+import axios from 'axios'; // Import axios
+
+// ==========================================================
+// THÊM DÒNG NÀY (ĐÂY LÀ PHẦN SỬA LỖI)
+// Đặt địa chỉ Backend làm địa chỉ mặc định cho TẤT CẢ các lệnh gọi axios
+// (Nếu Backend của bạn đang chạy cổng 8080, hãy sửa 8083 thành 8080)
+// ==========================================================
+axios.defaults.baseURL = 'http://localhost:8083/api/v1';
+
 
 // 1. Tạo Context
 const AuthContext = createContext();
@@ -9,7 +17,6 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    // (Bạn có thể thêm state 'user' để lưu thông tin user sau)
 
     // 3. Kiểm tra token khi ứng dụng khởi động
     useEffect(() => {
@@ -28,10 +35,8 @@ export const AuthProvider = ({ children }) => {
             const receivedToken = await AuthService.login(email, password);
             setToken(receivedToken);
             setIsAuthenticated(true);
-            // Cấu hình axios để TỰ ĐỘNG đính kèm token vào header
             axios.defaults.headers.common['Authorization'] = `Bearer ${receivedToken}`;
         } catch (error) {
-            // Ném lỗi ra để LoginPage có thể bắt
             throw error;
         }
     };
@@ -41,11 +46,10 @@ export const AuthProvider = ({ children }) => {
         AuthService.logout();
         setToken(null);
         setIsAuthenticated(false);
-        // Xóa token khỏi header axios
         delete axios.defaults.headers.common['Authorization'];
     };
 
-    // 6. Cung cấp các giá trị này cho các "con"
+    // 6. Cung cấp các giá trị
     const value = {
         token,
         isAuthenticated,
