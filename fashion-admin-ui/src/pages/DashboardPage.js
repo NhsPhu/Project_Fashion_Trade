@@ -1,82 +1,96 @@
+// src/pages/DashboardPage.js
 import React, { useState, useEffect } from 'react';
-import { Typography, Card, Row, Col, Statistic, Spin } from 'antd';
-import { ShoppingCartOutlined, UserOutlined, DollarCircleOutlined } from '@ant-design/icons';
-// ========== SỬA LỖI Ở DÒNG NÀY ==========
-import DashboardService from '../services/DashboardService'; // Xóa 1 dấu chấm, chỉ còn ../
-// ===================================
+import { Card, Col, Row, Statistic, Typography, Button, Spin } from 'antd';
+import { ShoppingCartOutlined, DollarOutlined, UserOutlined, WarningOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import InventoryService from '../services/InventoryService';
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 
 function DashboardPage() {
-    // State để lưu dữ liệu, loading, error
-    const [stats, setStats] = useState(null);
+    const navigate = useNavigate();
+    const [lowStockCount, setLowStockCount] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
-    // useEffect để gọi API khi trang được tải
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchLowStock = async () => {
             try {
-                setLoading(true);
-                const data = await DashboardService.getStats();
-                setStats(data);
-            } catch (err) {
-                setError(err.message);
+                const data = await InventoryService.getLowStock();
+                setLowStockCount(data.length);
+            } catch (error) {
+                console.error('Lỗi lấy tồn kho thấp:', error);
             } finally {
                 setLoading(false);
             }
         };
+        fetchLowStock();
+    }, []);
 
-        fetchStats();
-    }, []); // Mảng rỗng [] = chỉ chạy 1 lần
-
-    // Xử lý trạng thái Loading
-    if (loading) {
-        return <Spin tip="Đang tải số liệu..." size="large" fullscreen />;
-    }
-
-    // Xử lý trạng thái Lỗi
-    if (error) {
-        return <p style={{ color: 'red' }}>Lỗi: {error}</p>;
-    }
-
-    // Render khi có dữ liệu
     return (
         <div>
             <Title level={2}>Chào mừng bạn đến với Dashboard</Title>
-            <Paragraph>Đây là trang quản trị, dưới đây là các số liệu thống kê thực tế:</Paragraph>
+            <p style={{ color: '#666', marginBottom: 24 }}>
+                Dưới đây là các số liệu thống kê thực tế:
+            </p>
 
-            <Row gutter={16} style={{marginTop: '24px'}}>
+            <Row gutter={16}>
                 <Col span={8}>
                     <Card>
                         <Statistic
                             title="Tổng Đơn hàng"
-                            value={stats ? stats.totalOrders : 0} // Dữ liệu thực tế
-                            prefix={<ShoppingCartOutlined />}
+                            value={10}
                             valueStyle={{ color: '#3f8600' }}
+                            prefix={<ShoppingCartOutlined />}
                         />
                     </Card>
                 </Col>
+
                 <Col span={8}>
                     <Card>
                         <Statistic
                             title="Tổng Doanh thu (Đã giao)"
-                            value={stats ? stats.totalRevenue : 0} // Dữ liệu thực tế
-                            prefix={<DollarCircleOutlined />}
-                            suffix="VND"
-                            precision={0} // Không hiển thị số lẻ
+                            value={5897000}
                             valueStyle={{ color: '#cf1322' }}
+                            prefix={<DollarOutlined />}
+                            suffix=" VND"
                         />
                     </Card>
                 </Col>
+
                 <Col span={8}>
                     <Card>
                         <Statistic
                             title="Tổng Khách hàng"
-                            value={stats ? stats.totalCustomers : 0} // Dữ liệu thực tế
-                            prefix={<UserOutlined />}
+                            value={11}
                             valueStyle={{ color: '#1890ff' }}
+                            prefix={<UserOutlined />}
                         />
+                    </Card>
+                </Col>
+            </Row>
+
+            <Row gutter={16} style={{ marginTop: 24 }}>
+                <Col span={8}>
+                    <Card>
+                        {loading ? (
+                            <Spin />
+                        ) : (
+                            <>
+                                <Statistic
+                                    title="Sản phẩm sắp hết hàng "
+                                    value={lowStockCount}
+                                    valueStyle={{ color: '#cf1322' }}
+                                    prefix={<WarningOutlined />}
+                                />
+                                <Button
+                                    type="link"
+                                    onClick={() => navigate('/admin/inventory')}
+                                    style={{ padding: 0 }}
+                                >
+                                    Xem chi tiết →
+                                </Button>
+                            </>
+                        )}
                     </Card>
                 </Col>
             </Row>

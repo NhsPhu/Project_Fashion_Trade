@@ -13,5 +13,3 @@ root.render(
         </BrowserRouter>
     </React.StrictMode>
 );
-//chú thích
-//sữa cái gì đó 
