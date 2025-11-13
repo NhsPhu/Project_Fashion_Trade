@@ -1,16 +1,22 @@
-// src/AppRoutes.js
+// src/routes/AppRoutes.js
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-// Layout & Pages
-import AdminLayout from '../components/layout/AdminLayout';
+// Layout
+import AdminLayout from '../components/layouts/AdminLayout';
+
+// Auth Pages
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
+
+// Dashboard
 import DashboardPage from '../pages/DashboardPage';
+
+// Private Route - CÙNG THƯ MỤC
 import PrivateRoute from './PrivateRoute';
 
-// CRUD Pages
+// === CRUD PAGES ===
 import UserListPage from '../pages/users/UserListPage';
 import UserEditPage from '../pages/users/UserEditPage';
 import ProductListPage from '../pages/products/ProductListPage';
@@ -25,15 +31,28 @@ import BrandListPage from '../pages/brands/BrandListPage';
 import BrandCreatePage from '../pages/brands/BrandCreatePage';
 import BrandEditPage from '../pages/brands/BrandEditPage';
 
-// TỒN KHO – ĐÃ THÊM
+// Inventory
 import InventoryListPage from '../pages/inventory/InventoryListPage';
 import InventoryUpdatePage from '../pages/inventory/InventoryUpdatePage';
+
+// Coupons
+import CouponListPage from '../pages/coupon/CouponListPage';
+import CouponFormPage from '../pages/coupon/CouponFormPage';
+
+// Reports
+import ReportDashboard from '../pages/report/ReportDashboard';
 
 function AppRoutes() {
     const { isAuthenticated } = useAuth();
 
     return (
         <Routes>
+            {/* GỐC */}
+            <Route
+                path="/"
+                element={<Navigate to={isAuthenticated ? "/admin/dashboard" : "/login"} replace />}
+            />
+
             {/* Đăng nhập */}
             <Route
                 path="/login"
@@ -49,6 +68,7 @@ function AppRoutes() {
             {/* Admin Routes – Bảo vệ */}
             <Route path="/admin" element={<PrivateRoute />}>
                 <Route element={<AdminLayout />}>
+                    <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<DashboardPage />} />
 
                     {/* Sản phẩm */}
@@ -74,23 +94,22 @@ function AppRoutes() {
                     <Route path="brands/new" element={<BrandCreatePage />} />
                     <Route path="brands/edit/:id" element={<BrandEditPage />} />
 
-                    {/* TỒN KHO – HOẠT ĐỘNG 100% */}
+                    {/* Tồn kho */}
                     <Route path="inventory" element={<InventoryListPage />} />
                     <Route path="inventory/edit/:variantId" element={<InventoryUpdatePage />} />
 
-                    {/* Redirect mặc định */}
-                    <Route index element={<Navigate to="dashboard" replace />} />
+                    {/* Mã giảm giá */}
+                    <Route path="coupons" element={<CouponListPage />} />
+                    <Route path="coupons/create" element={<CouponFormPage />} />
+                    <Route path="coupons/edit/:id" element={<CouponFormPage />} />
+
+                    {/* Báo cáo */}
+                    <Route path="reports" element={<ReportDashboard />} />
                 </Route>
             </Route>
 
-            {/* Gốc */}
-            <Route
-                path="/"
-                element={<Navigate to={isAuthenticated ? "/admin/dashboard" : "/login"} replace />}
-            />
-
             {/* 404 */}
-            <Route path="*" element={<h2>404 Not Found</h2>} />
+            <Route path="*" element={<h2 style={{ padding: 20 }}>404 Not Found</h2>} />
         </Routes>
     );
 }

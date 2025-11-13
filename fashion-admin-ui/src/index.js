@@ -1,15 +1,18 @@
+// src/index.js
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import 'antd/dist/reset.css'; // <-- THÊM DÒNG NÀY
+import { AuthProvider } from './contexts/AuthContext';  // ĐÚNG ĐƯỜNG DẪN
 import App from './App';
+import 'antd/dist/reset.css';
 import './index.css';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
+ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-        <BrowserRouter>
-            <App />
-        </BrowserRouter>
+        <AuthProvider>
+            <BrowserRouter>
+                <App />
+            </BrowserRouter>
+        </AuthProvider>
     </React.StrictMode>
 );

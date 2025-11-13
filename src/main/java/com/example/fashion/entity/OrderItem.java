@@ -1,3 +1,4 @@
+// src/main/java/com/example/fashion/entity/OrderItem.java
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
@@ -7,8 +8,7 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "order_items")
-@Getter // <-- Đảm bảo bạn có @Getter
-@Setter // <-- Đảm bảo bạn có @Setter
+@Getter @Setter
 public class OrderItem {
 
     @Id
@@ -23,24 +23,19 @@ public class OrderItem {
     @JoinColumn(name = "variant_id", nullable = false)
     private ProductVariant productVariant;
 
-    // ========== THÊM 2 TRƯỜNG BỊ THIẾU ==========
-
-    // Lưu lại tên sản phẩm (từ productVariant.getProduct().getName())
     @Column(name = "product_name")
-    private String productName; // <-- @Getter sẽ tạo getProductName()
+    private String productName;
 
-    // Lưu lại SKU (từ productVariant.getSku())
     @Column(name = "variant_sku")
-    private String variantSku; // <-- @Getter sẽ tạo getVariantSku()
+    private String variantSku;
 
-    // ===========================================
-
+    // ĐÃ SỬA: Double → BigDecimal
     @Column(name = "unit_price", precision = 10, scale = 2, nullable = false)
     private BigDecimal unitPrice;
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "subtotal", precision = 10, scale = 2, nullable = false)
-    private BigDecimal subtotal; // (unitPrice * quantity)
+    @Column(name = "subtotal", precision = 12, scale = 2, nullable = false)
+    private BigDecimal subtotal;
 }

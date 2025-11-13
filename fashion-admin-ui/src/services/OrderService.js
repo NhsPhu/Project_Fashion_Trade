@@ -47,7 +47,7 @@ const OrderService = {
         try {
             const response = await axios.put(`/api/v1/admin/orders/${id}/status`, data);
             return response.data;
-        // ========== ĐÃ SỬA LỖI ==========
+            // ========== ĐÃ SỬA LỖI ==========
         } catch (error) { // <-- Thêm {
             console.error(`Lỗi khi cập nhật đơn hàng ${id}:`, error.response?.data || error.message);
             throw new Error(error.response?.data?.message || 'Cập nhật đơn hàng thất bại');

@@ -4,36 +4,30 @@ import lombok.*;
 
 public class InventoryResponseDTO {
 
-    // Dùng cho GET /low-stock
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     public static class LowStockItem {
+        private Long inventoryId;
         private Long variantId;
         private String sku;
         private Integer currentStock;
         private String productName;
         private String attributes;
+        private String warehouseName;
     }
 
-    // Dùng cho GET /{variantId}
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     public static class StockInfo {
+        private Long inventoryId;
         private Long variantId;
         private String sku;
         private Integer quantity;
         private String productName;
+        private String warehouseName;
     }
 
-    // Dùng cho POST / (thành công)
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     public static class UpdateSuccess {
         private boolean success = true;
-        private String message;
-    }
-
-    // Dùng cho lỗi
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-    public static class ErrorResponse {
-        private boolean success = false;
         private String message;
     }
 }

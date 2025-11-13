@@ -6,26 +6,30 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "inventory")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(
+        name = "inventory",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"variant_id", "warehouse_id"})
+)
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class Inventory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "product_id", nullable = false, unique = true)
-    private Product product;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "variant_id", nullable = false)
+    private ProductVariant variant;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id", nullable = false)
+    private Warehouse warehouse;
 
     @Column(nullable = false)
     private Integer quantity = 0;
 
     @Column(name = "low_stock_threshold")
-    private Integer lowStockThreshold = 10; // Cảnh báo khi <= 10
+    private Integer lowStockThreshold = 10;
 
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated = LocalDateTime.now();

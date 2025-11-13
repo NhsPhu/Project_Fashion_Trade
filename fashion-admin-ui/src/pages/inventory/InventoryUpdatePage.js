@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import InventoryService from '../../services/InventoryService';
-import { Form, Button, Input, Typography, notification, Card, Spin } from 'antd';
+import { Form, Button, InputNumber, Select, Typography, notification, Card, Spin } from 'antd';
+import axios from 'axios';
 
 const { Title } = Typography;
 
@@ -12,29 +13,80 @@ function InventoryUpdatePage() {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [warehouses, setWarehouses] = useState([]);
+    const [currentStock, setCurrentStock] = useState(null);
 
     useEffect(() => {
-        const loadVariant = async () => {
+        const loadData = async () => {
             try {
-                const data = await InventoryService.getStock(variantId);
-                form.setFieldsValue({ quantity: data.currentStock }); // SỬA: currentStock
+                // SỬA: GỌI ĐÚNG API + THÊM TOKEN
+                const token = localStorage.getItem('token');
+                const whRes = await axios.get('/api/v1/admin/warehouses', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const warehouseList = whRes.data;
+                setWarehouses(warehouseList);
+
+                if (warehouseList.length === 0) {
+                    throw new Error("Không có kho nào");
+                }
+
+                // TÌM TỒN KHO TRONG TẤT CẢ KHO
+                let found = false;
+                for (const wh of warehouseList) {
+                    try {
+                        const res = await InventoryService.getStock(variantId, wh.id);
+                        form.setFieldsValue({
+                            warehouseId: wh.id,
+                            quantity: res.quantity,
+                            action: 'IN'
+                        });
+                        setCurrentStock(res.quantity);
+                        found = true;
+                        break;
+                    } catch (err) {
+                        continue;
+                    }
+                }
+
+                if (!found) {
+                    form.setFieldsValue({
+                        warehouseId: warehouseList[0].id,
+                        quantity: 0,
+                        action: 'IN'
+                    });
+                    setCurrentStock(0);
+                }
+
             } catch (err) {
-                notification.error({ message: 'Lỗi tải dữ liệu', description: err.message });
+                notification.error({
+                    message: 'Lỗi tải dữ liệu',
+                    description: err.response?.data?.message || err.message
+                });
             } finally {
                 setLoading(false);
             }
         };
-        loadVariant();
+        loadData();
     }, [variantId, form]);
 
     const onFinish = async (values) => {
         setIsUpdating(true);
         try {
-            await InventoryService.updateStock({ variantId, quantity: values.quantity });
-            notification.success({ message: 'Cập nhật tồn kho thành công!' });
+            await InventoryService.updateStock({
+                variantId: Number(variantId),
+                warehouseId: values.warehouseId,
+                quantity: values.quantity,
+                action: values.action
+            });
+            notification.success({ message: 'Cập nhật thành công!' });
             navigate('/admin/inventory');
         } catch (err) {
-            notification.error({ message: 'Cập nhật thất bại', description: err.message });
+            notification.error({
+                message: 'Cập nhật thất bại',
+                description: err.response?.data?.message || err.message
+            });
+        } finally {
             setIsUpdating(false);
         }
     };
@@ -45,14 +97,37 @@ function InventoryUpdatePage() {
 
     return (
         <Card style={{ maxWidth: 600, margin: '40px auto' }}>
-            <Title level={3}>Cập nhật tồn kho (ID: {variantId})</Title>
+            <Title level={3}>Cập nhật tồn kho (Variant ID: {variantId})</Title>
+            {currentStock !== null && (
+                <div style={{ marginBottom: 16, color: '#888' }}>
+                    Tồn kho hiện tại: <strong>{currentStock}</strong>
+                </div>
+            )}
             <Form form={form} layout="vertical" onFinish={onFinish}>
-                <Form.Item name="quantity" label="Số lượng tồn kho" rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}>
-                    <Input type="number" min={0} />
+                <Form.Item name="warehouseId" label="* Kho" rules={[{ required: true }]}>
+                    <Select placeholder="Chọn kho">
+                        {warehouses.map(wh => (
+                            <Select.Option key={wh.id} value={wh.id}>
+                                {wh.name}
+                            </Select.Option>
+                        ))}
+                    </Select>
                 </Form.Item>
+
+                <Form.Item name="action" label="* Hành động" rules={[{ required: true }]}>
+                    <Select>
+                        <Select.Option value="IN">Nhập kho</Select.Option>
+                        <Select.Option value="OUT">Xuất kho</Select.Option>
+                    </Select>
+                </Form.Item>
+
+                <Form.Item name="quantity" label="* Số lượng" rules={[{ required: true, type: 'number', min: 1 }]}>
+                    <InputNumber min={1} style={{ width: '100%' }} />
+                </Form.Item>
+
                 <Form.Item>
                     <Button type="primary" htmlType="submit" loading={isUpdating} block>
-                        Lưu Cập nhật
+                        Thực hiện
                     </Button>
                 </Form.Item>
             </Form>

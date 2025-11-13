@@ -1,86 +1,83 @@
+// src/main/java/com/example/fashion/entity/Order.java
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter; // <-- Đảm bảo bạn có @Setter
+import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
-@Getter
-@Setter // <-- LỖI SẼ BIẾN MẤT NẾU CÓ DÒNG NÀY
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "order_no", unique = true, nullable = false, length = 50)
+    @Column(name = "order_no", unique = true, nullable = false)
     private String orderNo;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(name = "total_amount", precision = 10, scale = 2, nullable = false)
+    // ĐÃ SỬA: Double → BigDecimal
+    @Column(name = "total_amount", precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
     @Column(name = "shipping_fee", precision = 10, scale = 2)
-    private BigDecimal shippingFee;
+    private BigDecimal shippingFee = BigDecimal.ZERO;
 
     @Column(name = "discount_amount", precision = 10, scale = 2)
-    private BigDecimal discountAmount;
+    private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    @Column(name = "pay_status", length = 50)
+    @Column(name = "final_amount", precision = 12, scale = 2)
+    private BigDecimal finalAmount;
+
+    @Column(name = "pay_status", length = 20)
     private String payStatus;
 
-    @Column(name = "order_status", length = 50)
+    @Column(name = "order_status", length = 20)
     private String orderStatus;
 
     @Column(name = "payment_method", length = 50)
     private String paymentMethod;
 
+    @Column(name = "tracking_number", length = 100)
+    private String trackingNumber;
+
+    // SHIPPING INFO
     @Column(name = "shipping_name", length = 100)
     private String shippingName;
 
     @Column(name = "shipping_phone", length = 20)
     private String shippingPhone;
 
-    @Column(name = "shipping_address_line")
+    @Column(name = "shipping_address_line", length = 255)
     private String shippingAddressLine;
 
-    @Column(name = "shipping_city")
+    @Column(name = "shipping_city", length = 100)
     private String shippingCity;
 
-    @Column(name = "shipping_district")
+    @Column(name = "shipping_district", length = 100)
     private String shippingDistrict;
 
-    @Column(name = "shipping_province")
+    @Column(name = "shipping_province", length = 100)
     private String shippingProvince;
 
-    // TRƯỜNG BỊ THIẾU NẰM Ở ĐÂY
-    @Column(name = "tracking_number", length = 100)
-    private String trackingNumber; // <-- @Setter sẽ tạo ra setTrackingNumber()
-
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<OrderItem> items;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<OrderItem> items;
 
     @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -1,12 +1,10 @@
+// src/contexts/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
 import AuthService from '../services/AuthService';
 import axios from 'axios';
 
-// ========== SỬA LỖI Ở ĐÂY ==========
 // baseURL CHỈ là địa chỉ server (port 8080), KHÔNG bao gồm /api/v1
 axios.defaults.baseURL = 'http://localhost:8080';
-// ===================================
-
 
 const AuthContext = createContext();
 
@@ -25,7 +23,6 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            // AuthService.login đã được cấu hình riêng, không bị ảnh hưởng
             const receivedToken = await AuthService.login(email, password);
             setToken(receivedToken);
             setIsAuthenticated(true);

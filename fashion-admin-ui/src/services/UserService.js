@@ -43,7 +43,7 @@ const UserService = {
             return response.data;
 
         } catch (error) {
-             console.error(`Lỗi khi lấy chi tiết người dùng ${userId}:`, error.response?.data || error.message);
+            console.error(`Lỗi khi lấy chi tiết người dùng ${userId}:`, error.response?.data || error.message);
             throw new Error(error.response?.data?.message || 'Không thể tải chi tiết người dùng');
         }
     },

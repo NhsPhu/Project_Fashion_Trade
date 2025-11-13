@@ -1,19 +1,42 @@
+// src/services/InventoryService.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080/api/v1/admin/inventory';
+const API_URL = '/api/v1/admin/inventory'; // Dùng relative URL → proxy tốt hơn
 
-const getHeaders = () => ({});
+const getHeaders = () => {
+    const token = localStorage.getItem('token');
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+};
 
 export default {
+    /**
+     * Lấy danh sách hàng sắp hết kho (toàn hệ thống)
+     */
     getLowStock: async () => {
         const response = await axios.get(`${API_URL}/low-stock`, { headers: getHeaders() });
-        return response.data;
+        return response.data; // List<LowStockItem>
     },
-    getStock: async (variantId) => {
-        const response = await axios.get(`${API_URL}/${variantId}`, { headers: getHeaders() });
-        return response.data;
+
+    /**
+     * Lấy tồn kho theo variantId + warehouseId
+     */
+    getStock: async (variantId, warehouseId) => {
+        const response = await axios.get(
+            `${API_URL}/${variantId}/${warehouseId}`,
+            { headers: getHeaders() }
+        );
+        return response.data; // StockInfo
     },
-    updateStock: async ({ variantId, quantity }) => {
-        await axios.put(`${API_URL}/${variantId}`, { quantity }, { headers: getHeaders() });
+
+    /**
+     * Cập nhật tồn kho: IN (nhập), OUT (xuất)
+     */
+    updateStock: async ({ variantId, warehouseId, quantity, action }) => {
+        const payload = { variantId, warehouseId, quantity, action };
+        const response = await axios.post(API_URL, payload, { headers: getHeaders() });
+        return response.data; // UpdateSuccess
     },
 };

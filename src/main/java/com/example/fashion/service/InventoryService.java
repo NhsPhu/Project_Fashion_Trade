@@ -2,12 +2,17 @@ package com.example.fashion.service;
 
 import com.example.fashion.dto.InventoryRequestDTO;
 import com.example.fashion.dto.InventoryResponseDTO;
+import com.example.fashion.entity.Inventory;
 import com.example.fashion.entity.ProductVariant;
+import com.example.fashion.entity.Warehouse;
+import com.example.fashion.repository.InventoryRepository;
 import com.example.fashion.repository.ProductVariantRepository;
+import com.example.fashion.repository.WarehouseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -15,43 +20,78 @@ import java.util.List;
 @Transactional
 public class InventoryService {
 
+    private final InventoryRepository inventoryRepository;
     private final ProductVariantRepository variantRepository;
+    private final WarehouseRepository warehouseRepository;
 
     public InventoryResponseDTO.UpdateSuccess updateStock(InventoryRequestDTO request) {
         ProductVariant variant = variantRepository.findById(request.getVariantId())
                 .orElseThrow(() -> new RuntimeException("Biến thể không tồn tại: ID = " + request.getVariantId()));
 
-        variant.setStockQuantity(request.getQuantity());
-        variantRepository.save(variant);
+        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
+                .orElseThrow(() -> new RuntimeException("Kho không tồn tại: ID = " + request.getWarehouseId()));
+
+        Inventory inventory = inventoryRepository
+                .findByVariantIdAndWarehouseId(request.getVariantId(), request.getWarehouseId())
+                .orElseGet(() -> {
+                    Inventory newInv = new Inventory();
+                    newInv.setVariant(variant);
+                    newInv.setWarehouse(warehouse);
+                    newInv.setQuantity(0);
+                    return newInv;
+                });
+
+        int oldQty = inventory.getQuantity();
+        int newQty = switch (request.getAction()) {
+            case "IN" -> oldQty + request.getQuantity();
+            case "OUT" -> {
+                if (oldQty < request.getQuantity()) {
+                    throw new RuntimeException("Không đủ hàng để xuất kho");
+                }
+                yield oldQty - request.getQuantity();
+            }
+            case "TRANSFER" -> oldQty; // Dùng khi điều chuyển
+            default -> throw new IllegalArgumentException("Hành động không hợp lệ: " + request.getAction());
+        };
+
+        inventory.setQuantity(newQty);
+        inventory.setLastUpdated(LocalDateTime.now());
+        inventoryRepository.save(inventory);
 
         return InventoryResponseDTO.UpdateSuccess.builder()
-                .message("Cập nhật tồn kho thành công cho biến thể ID: " + request.getVariantId())
+                .message(String.format("%s kho thành công: %d → %d",
+                        request.getAction().equals("IN") ? "Nhập" : "Xuất",
+                        oldQty, newQty))
                 .build();
     }
 
     @Transactional(readOnly = true)
     public List<InventoryResponseDTO.LowStockItem> getLowStock() {
-        return variantRepository.findByStockQuantityLessThanEqual(10).stream()
-                .map(v -> InventoryResponseDTO.LowStockItem.builder()
-                        .variantId(v.getId())
-                        .sku(v.getSku())
-                        .currentStock(v.getStockQuantity())
-                        .productName(v.getProduct() != null ? v.getProduct().getName() : "Sản phẩm không xác định")
-                        .attributes(v.getAttributes())
+        return inventoryRepository.findByQuantityLessThanEqual(10).stream()
+                .map(inv -> InventoryResponseDTO.LowStockItem.builder()
+                        .inventoryId(inv.getId())
+                        .variantId(inv.getVariant().getId())
+                        .sku(inv.getVariant().getSku())
+                        .currentStock(inv.getQuantity())
+                        .productName(inv.getVariant().getProduct() != null ? inv.getVariant().getProduct().getName() : "N/A")
+                        .attributes(inv.getVariant().getAttributes())
+                        .warehouseName(inv.getWarehouse().getName())
                         .build())
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public InventoryResponseDTO.StockInfo getStock(Long variantId) {
-        ProductVariant variant = variantRepository.findById(variantId)
-                .orElseThrow(() -> new RuntimeException("Biến thể không tồn tại"));
+    public InventoryResponseDTO.StockInfo getStock(Long variantId, Long warehouseId) {
+        Inventory inv = inventoryRepository.findByVariantIdAndWarehouseId(variantId, warehouseId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tồn kho"));
 
         return InventoryResponseDTO.StockInfo.builder()
-                .variantId(variant.getId())
-                .sku(variant.getSku())
-                .quantity(variant.getStockQuantity())
-                .productName(variant.getProduct() != null ? variant.getProduct().getName() : "Sản phẩm không xác định")
+                .inventoryId(inv.getId())
+                .variantId(inv.getVariant().getId())
+                .sku(inv.getVariant().getSku())
+                .quantity(inv.getQuantity())
+                .productName(inv.getVariant().getProduct() != null ? inv.getVariant().getProduct().getName() : "N/A")
+                .warehouseName(inv.getWarehouse().getName())
                 .build();
     }
 }

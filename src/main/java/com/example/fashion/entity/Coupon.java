@@ -1,50 +1,56 @@
+// src/main/java/com/example/fashion/entity/Coupon.java
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import java.math.BigDecimal;
+import lombok.*;
+import java.math.BigDecimal; // THÊM import
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(name = "coupons")
-@Getter
-@Setter
+@Table(name = "coupon")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Coupon {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "code", unique = true, nullable = false, length = 50)
-    private String code; // Mã giảm giá
+    @Column(unique = true, nullable = false, length = 50)
+    private String code;
 
-    // Loại: "percent" (phần trăm), "fixed" (tiền cố định), "free_shipping"
-    @Column(name = "type", length = 50, nullable = false)
-    private String type;
+    @Column(nullable = false, length = 20)
+    private String type; // PERCENT, FIXED, FREE_SHIPPING
 
-    // Giá trị (ví dụ: 10 cho 10%, hoặc 100000 cho 100.000 VNĐ)
-    @Column(name = "value", precision = 10, scale = 2, nullable = false)
+    // ĐÃ SỬA: Double → BigDecimal + scale
+    @Column(name = "value", precision = 10, scale = 2)
     private BigDecimal value;
 
-    // Đơn hàng tối thiểu để áp dụng
-    @Column(name = "min_order_amount", precision = 10, scale = 2)
-    private BigDecimal minOrderAmount;
+    @Column(name = "min_order_value", precision = 10, scale = 2)
+    private BigDecimal minOrderValue;
 
-    // Giới hạn số lần sử dụng
+    @ElementCollection
+    @CollectionTable(name = "coupon_product", joinColumns = @JoinColumn(name = "coupon_id"))
+    @Column(name = "product_id")
+    private List<Long> productIds;
+
+    @ElementCollection
+    @CollectionTable(name = "coupon_category", joinColumns = @JoinColumn(name = "coupon_id"))
+    @Column(name = "category_id")
+    private List<Long> categoryIds;
+
+    @Column(name = "start_date")
+    private LocalDateTime startDate;
+
+    @Column(name = "end_date")
+    private LocalDateTime endDate;
+
     @Column(name = "usage_limit")
     private Integer usageLimit;
 
-    // Số lần đã sử dụng
     @Column(name = "used_count")
     private Integer usedCount = 0;
 
-    @Column(name = "starts_at")
-    private LocalDateTime startsAt; // Ngày bắt đầu
-
-    @Column(name = "ends_at")
-    private LocalDateTime endsAt; // Ngày kết thúc
-
-    @Column(name = "active", nullable = false)
-    private boolean active = true;
+    @Column(nullable = false)
+    private Boolean active = true;
 }

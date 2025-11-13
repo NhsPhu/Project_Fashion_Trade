@@ -1,20 +1,28 @@
+// src/main/java/com/example/fashion/repository/OrderRepository.java
 package com.example.fashion.repository;
 
 import com.example.fashion.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query; // 1. Import Query
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
-public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
+public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    Optional<Order> findByOrderNo(String orderNo);
+    // 1. TÌM ĐƠN THEO NGÀY + TRẠNG THÁI (dùng tên field đúng: orderStatus)
+    List<Order> findByCreatedAtBetweenAndOrderStatus(
+            LocalDateTime start, LocalDateTime end, String orderStatus);
 
-    // 2. THÊM HÀM MỚI (Tính tổng doanh thu)
-    // (COALESCE để trả về 0.0 nếu không có đơn hàng nào)
-    @Query("SELECT COALESCE(SUM(o.totalAmount), 0.0) FROM Order o WHERE o.orderStatus = 'Delivered'")
+    // 2. TÌM ĐƠN THEO NGÀY
+    List<Order> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    // 3. ĐẾM ĐƠN THEO NGÀY
+    long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    // 4. TỔNG DOANH THU (dùng trạng thái bạn muốn: COMPLETED)
+    @Query("SELECT COALESCE(SUM(o.finalAmount), 0) FROM Order o WHERE o.orderStatus = 'COMPLETED'")
     Double findTotalRevenue();
 }
