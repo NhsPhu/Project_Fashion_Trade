@@ -1,0 +1,183 @@
+-- ==========================================================
+-- BƯỚC 1: XÓA SẠCH DỮ LIỆU CŨ (Để chạy lại)
+-- ==========================================================
+SET FOREIGN_KEY_CHECKS = 0; -- (Chỉ dành cho MySQL)
+
+TRUNCATE TABLE order_items;
+TRUNCATE TABLE orders;
+TRUNCATE TABLE product_images;
+TRUNCATE TABLE product_variants;
+TRUNCATE TABLE products;
+TRUNCATE TABLE categories;
+TRUNCATE TABLE brands;
+TRUNCATE TABLE user_roles;
+TRUNCATE TABLE users;
+TRUNCATE TABLE addresses;
+TRUNCATE TABLE reviews;
+TRUNCATE TABLE cart_items;
+TRUNCATE TABLE carts;
+
+SET FOREIGN_KEY_CHECKS = 1; -- (Chỉ dành cho MySQL)
+
+
+-- ==========================================================
+-- BƯỚC 2: USERS (Người dùng)
+-- Mật khẩu cho tất cả là: 123456
+-- Hash: $2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq
+-- ==========================================================
+INSERT INTO users (id, email, password_hash, full_name, phone, status, email_verified, created_at, updated_at)
+VALUES
+(1, 'superadmin@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Super Admin', '0900000001', 'active', true, NOW(), NOW()),
+(2, 'manager@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Quản lý', '0900000002', 'active', true, NOW(), NOW()),
+(3, 'staff1@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Nhân viên A', '0900000003', 'active', true, NOW(), NOW()),
+(4, 'customer1@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Nguyễn Văn A', '0912345678', 'active', true, NOW(), NOW()),
+(5, 'customer2@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Trần Thị B', '0912345679', 'active', true, NOW(), NOW()),
+(6, 'customer3@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Lê Văn C', '0912345680', 'active', true, NOW(), NOW()),
+(7, 'customer4@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Phạm Thị D', '0912345681', 'active', true, NOW(), NOW()),
+(8, 'customer5@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Hoàng Văn E', '0912345682', 'active', true, NOW(), NOW()),
+(9, 'customer6@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Vũ Thị F', '0912345683', 'active', true, NOW(), NOW()),
+(10, 'customer7@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lG/v.kXO.OT/5sWpIYISMO2i/m.b68.Q3g.D/Lq', 'Đỗ Văn G', '0912345684', 'active', true, NOW(), NOW());
+
+-- ==========================================================
+-- BƯỚC 3: USER_ROLES
+-- ==========================================================
+INSERT INTO user_roles (user_id, role)
+VALUES
+(1, 'SUPER_ADMIN'),
+(1, 'ADMIN'),
+(2, 'ADMIN'),
+(3, 'STAFF'),
+(4, 'CUSTOMER'),
+(5, 'CUSTOMER'),
+(6, 'CUSTOMER'),
+(7, 'CUSTOMER'),
+(8, 'CUSTOMER'),
+(9, 'CUSTOMER'),
+(10, 'CUSTOMER');
+
+-- ==========================================================
+-- BƯỚC 4: BRANDS
+-- ==========================================================
+INSERT INTO brands (id, name, logo_url, description)
+VALUES
+(1, 'Uniqlo', 'https://logo.com/uniqlo', 'Thương hiệu Nhật Bản'),
+(2, 'Zara', 'https://logo.com/zara', 'Thương hiệu Tây Ban Nha'),
+(3, 'Nike', 'https://logo.com/nike', 'Thương hiệu Mỹ'),
+(4, 'Adidas', 'https://logo.com/adidas', 'Thương hiệu Đức');
+
+-- ==========================================================
+-- BƯỚC 5: CATEGORIES
+-- ==========================================================
+INSERT INTO categories (id, name, slug, parent_id, active, sort_order, created_at, updated_at)
+VALUES
+(1, 'Thời Trang Nam', 'thoi-trang-nam', NULL, true, 1, NOW(), NOW()),
+(2, 'Thời Trang Nữ', 'thoi-trang-nu', NULL, true, 2, NOW(), NOW()),
+(3, 'Áo Nam', 'ao-nam', 1, true, 1, NOW(), NOW()),
+(4, 'Quần Nam', 'quan-nam', 1, true, 2, NOW(), NOW()),
+(5, 'Váy Nữ', 'vay-nu', 2, true, 1, NOW(), NOW()),
+(6, 'Áo Nữ', 'ao-nu', 2, true, 2, NOW(), NOW()),
+(7, 'Giày Dép', 'giay-dep', NULL, true, 3, NOW(), NOW());
+
+-- ==========================================================
+-- BƯỚC 6: PRODUCTS
+-- ==========================================================
+INSERT INTO products (id, name, slug, brand_id, category_id, description, status, created_at, updated_at)
+VALUES
+(1, 'Áo Thun Uniqlo AIRism Cổ Tròn', 'ao-thun-uniqlo-airism-co-tron', 1, 4, 'Thoáng khí, nhanh khô', 'active', NOW(), NOW()),
+(2, 'Quần Jeans Zara Slim Fit', 'quan-jeans-zara-slim-fit', 2, 5, 'Co giãn tốt', 'active', NOW(), NOW()),
+(3, 'Giày Chạy Bộ Nike Revolution 6', 'giay-chay-bo-nike-revolution-6', 3, 7, 'Nhẹ, êm ái', 'active', NOW(), NOW()),
+(4, 'Váy Hoa Zara Mùa Hè', 'vay-hoa-zara-mua-he', 2, 6, 'Thanh lịch', 'active', NOW(), NOW()),
+(5, 'Áo Hoodie Adidas Essentials', 'ao-hoodie-adidas-essentials', 4, 4, 'Ấm áp', 'active', NOW(), NOW()),
+(6, 'Quần Tây Uniqlo Smart Ankle', 'quan-tay-uniqlo-smart-ankle', 1, 5, 'Công sở', 'active', NOW(), NOW()),
+(7, 'Giày Adidas Ultraboost 22', 'giay-adidas-ultraboost-22', 4, 7, 'Công nghệ đỉnh cao', 'active', NOW(), NOW()),
+(8, 'Áo Croptop Nữ Zara', 'ao-croptop-nu-zara', 2, 4, 'Trẻ trung', 'active', NOW(), NOW());
+
+-- ==========================================================
+-- BƯỚC 7: PRODUCT_VARIANTS
+-- ==========================================================
+INSERT INTO product_variants (id, product_id, sku, color, size, price, stock_quantity, created_at, updated_at)
+VALUES
+(1, 1, 'UQ-AIR-BLK-M', 'Đen', 'M', 299000, 0, NOW(), NOW()),
+(2, 1, 'UQ-AIR-WHT-L', 'Trắng', 'L', 299000, 0, NOW(), NOW()),
+(3, 2, 'ZARA-JEAN-BLU-30', 'Xanh', '30', 899000, 0, NOW(), NOW()),
+(4, 2, 'ZARA-JEAN-BLK-32', 'Đen', '32', 899000, 0, NOW(), NOW()),
+(5, 3, 'NIKE-REV6-40', 'Xám', '40', 1500000, 0, NOW(), NOW()),
+(6, 3, 'NIKE-REV6-41', 'Xám', '41', 1500000, 0, NOW(), NOW()),
+(7, 4, 'ZARA-DRESS-S', 'Hoa', 'S', 999000, 0, NOW(), NOW()),
+(8, 4, 'ZARA-DRESS-M', 'Hoa', 'M', 999000, 0, NOW(), NOW()),
+(9, 5, 'ADI-HOOD-M', 'Xám', 'M', 1200000, 0, NOW(), NOW()),
+(10, 6, 'UQ-PANT-S', 'Xám', 'S', 799000, 0, NOW(), NOW()),
+(11, 7, 'ADI-UB-40', 'Trắng', '40', 3500000, 0, NOW(), NOW()),
+(12, 8, 'ZARA-CROP-S', 'Trắng', 'S', 499000, 0, NOW(), NOW());
+
+-- ==========================================================
+-- BƯỚC 9: ORDERS
+-- ==========================================================
+-- BƯỚC 9: ORDERS (ĐÃ SỬA: THÊM CỘT `order_no`)
+INSERT INTO orders (
+    id, order_code, order_no, user_id, total_amount, shipping_fee, discount_amount,
+    final_amount, customer_name, customer_phone,
+    status, payment_status, payment_method,
+    shipping_name, shipping_phone, shipping_address, shipping_city,
+    created_at, updated_at
+)
+VALUES
+(1, 'ORD-001', 'ORD-001', 4, 299000, 30000, 0, 329000, 'Nguyễn Văn A', '0912345678', 'Pending', 'Pending', 'COD', 'Nguyễn Văn A', '0912345678', '123 Đường A', 'Hà Nội', NOW(), NOW()),
+(2, 'ORD-002', 'ORD-002', 5, 899000, 30000, 0, 929000, 'Trần Thị B', '0912345679', 'Pending', 'Pending', 'COD', 'Trần Thị B', '0912345679', '456 Đường B', 'TP.HCM', NOW(), NOW()),
+(3, 'ORD-003', 'ORD-003', 6, 1500000, 30000, 0, 1530000, 'Lê Văn C', '0912345680', 'Pending', 'Pending', 'COD', 'Lê Văn C', '0912345680', '789 Đường C', 'Đà Nẵng', NOW(), NOW()),
+(4, 'ORD-004', 'ORD-004', 4, 598000, 30000, 0, 628000, 'Nguyễn Văn A', '0912345678', 'Pending', 'Pending', 'COD', 'Nguyễn Văn A', '0912345678', '123 Đường A', 'Hà Nội', NOW(), NOW()),
+(5, 'ORD-005', 'ORD-005', 7, 999000, 30000, 0, 1029000, 'Phạm Thị D', '0912345681', 'Pending', 'Pending', 'COD', 'Phạm Thị D', '0912345681', '101 Đường D', 'Hà Nội', NOW(), NOW()),
+(6, 'ORD-006', 'ORD-006', 8, 1500000, 30000, 0, 1530000, 'Hoàng Văn E', '0912345682', 'Pending', 'Pending', 'COD', 'Hoàng Văn E', '0912345682', '202 Đường E', 'TP.HCM', NOW(), NOW()),
+(7, 'ORD-007', 'ORD-007', 9, 1200000, 30000, 0, 1230000, 'Vũ Thị F', '0912345683', 'Pending', 'Pending', 'COD', 'Vũ Thị F', '0912345683', '303 Đường F', 'Đà Nẵng', NOW(), NOW()),
+(8, 'ORD-008', 'ORD-008', 10, 799000, 30000, 0, 829000, 'Đỗ Văn G', '0912345684', 'Pending', 'Pending', 'COD', 'Đỗ Văn G', '0912345684', '404 Đường G', 'Hà Nội', NOW(), NOW()),
+(9, 'ORD-009', 'ORD-009', 4, 3500000, 30000, 0, 3530000, 'Nguyễn Văn A', '0912345678', 'Pending', 'Pending', 'COD', 'Nguyễn Văn A', '0912345678', '123 Đường A', 'Hà Nội', NOW(), NOW()),
+(10, 'ORD-010', 'ORD-010', 5, 499000, 30000, 0, 529000, 'Trần Thị B', '0912345679', 'Pending', 'Pending', 'COD', 'Trần Thị B', '0912345679', '456 Đường B', 'TP.HCM', NOW(), NOW());
+-- ==========================================================
+-- BƯỚC 10: ORDER_ITEMS (Chi tiết đơn hàng)
+-- ==========================================================
+INSERT INTO order_items (id, order_id, variant_id, product_name, variant_sku, unit_price, quantity, subtotal)
+VALUES
+(1, 1, 1, 'Áo Thun Uniqlo AIRism Cổ Tròn', 'UQ-AIR-BLK-M', 299000, 1, 299000),
+(2, 2, 3, 'Quần Jeans Zara Slim Fit', 'ZARA-JEAN-BLU-30', 899000, 1, 899000),
+(3, 3, 5, 'Giày Chạy Bộ Nike Revolution 6', 'NIKE-REV6-40', 1500000, 1, 1500000),
+(4, 4, 1, 'Áo Thun Uniqlo AIRism Cổ Tròn', 'UQ-AIR-BLK-M', 299000, 2, 598000),
+(5, 5, 7, 'Váy Hoa Zara Mùa Hè', 'ZARA-DRESS-S', 999000, 1, 999000),
+(6, 6, 6, 'Giày Chạy Bộ Nike Revolution 6', 'NIKE-REV6-41', 1500000, 1, 1500000),
+(7, 7, 9, 'Áo Hoodie Adidas Essentials', 'ADI-HOOD-M', 1200000, 1, 1200000),
+(8, 8, 10, 'Quần Tây Uniqlo Smart Ankle', 'UQ-PANT-S', 799000, 1, 799000),
+(9, 9, 11, 'Giày Adidas Ultraboost 22', 'ADI-UB-40', 3500000, 1, 3500000),
+(10, 10, 12, 'Áo Croptop Nữ Zara', 'ZARA-CROP-S', 499000, 1, 499000);
+
+-- ==========================================================
+-- BỔ SUNG: BƯỚC 11: WAREHOUSES (Kho hàng)
+-- ==========================================================
+INSERT INTO warehouses (id, name, location)
+VALUES
+(1, 'Kho Hà Nội', '123 Đường Láng, Hà Nội'),
+(2, 'Kho TP.HCM', '456 Lê Lợi, Quận 1, TP.HCM'),
+(3, 'Kho Đà Nẵng', '789 Trần Phú, Đà Nẵng')
+AS new_data
+ON DUPLICATE KEY UPDATE
+    name = new_data.name,
+    location = new_data.location;
+
+-- ==========================================================
+-- BỔ SUNG: BƯỚC 12: INVENTORY (Tồn kho theo variant + kho)
+-- ==========================================================
+INSERT INTO inventory (variant_id, warehouse_id, product_id, quantity, low_stock_threshold, last_updated)
+VALUES
+-- Variant 3: ZARA-JEAN-BLU-30 → Tồn 5 (sắp hết)
+(3, 2, 2, 5, 10, NOW()),
+-- Variant 6: NIKE-REV6-41 → Tồn 3 (sắp hết)
+(6, 2, 3, 3, 10, NOW()),
+-- Variant 7: ZARA-DRESS-S → Tồn 8 (sắp hết)
+(7, 1, 4, 8, 10, NOW()),
+-- Bình thường
+(1, 1, 1, 100, 10, NOW()),
+(2, 1, 1, 150, 10, NOW()),
+(5, 1, 3, 80, 10, NOW())
+AS new_data
+ON DUPLICATE KEY UPDATE
+    quantity = new_data.quantity,
+    low_stock_threshold = new_data.low_stock_threshold,
+    last_updated = NOW();
