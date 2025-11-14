@@ -27,17 +27,17 @@ public class OrderItemResponseDTO {
         dto.setSubtotal(item.getSubtotal());
 
         // Lấy thông tin từ ProductVariant (nếu tồn tại)
-        if (item.getProductVariant() != null) {
-            dto.setVariantId(item.getProductVariant().getId());
+        // SỬA LỖI: item.getProductVariant() -> item.getVariant()
+        if (item.getVariant() != null) {
+            dto.setVariantId(item.getVariant().getId());
             // Lấy SKU từ variant
-            dto.setVariantSku(item.getProductVariant().getSku());
+            dto.setVariantSku(item.getVariant().getSku());
             // Lấy tên sản phẩm từ Product cha của variant
-            if (item.getProductVariant().getProduct() != null) {
-                dto.setProductName(item.getProductVariant().getProduct().getName());
+            if (item.getVariant().getProduct() != null) {
+                dto.setProductName(item.getVariant().getProduct().getName());
             }
         } else {
-            // Dự phòng nếu variant bị xóa (dùng thông tin đã lưu)
-            dto.setVariantSku(item.getVariantSku());
+
             dto.setProductName(item.getProductName());
         }
 
