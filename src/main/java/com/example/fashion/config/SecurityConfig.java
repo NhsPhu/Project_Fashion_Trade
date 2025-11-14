@@ -44,14 +44,19 @@ public class SecurityConfig {
                 .cors(cors -> cors.configure(http))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // PHÂN QUYỀN – ĐÃ SỬA THỨ TỰ, ĐẢM BẢO SUPER_ADMIN TRUY CẬP TẤT CẢ /admin/**
+                // PHÂN QUYỀN
                 .authorizeHttpRequests(auth -> auth
 
                         // 1. Cho phép tất cả OPTIONS (CORS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 2. Auth công khai
+                        // 2. Auth công khai (đăng nhập, đăng ký...)
                         .requestMatchers("/api/v1/auth/**").permitAll()
+
+                        // ==========================================================
+                        // ===== DÒNG MỚI ĐÃ THÊM CHO CHỨC NĂNG THANH TOÁN =====
+                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/checkout").permitAll()
+                        // ==========================================================
 
                         // 3. SIÊU QUAN TRỌNG: CHO PHÉP SUPER_ADMIN + MANAGER TRUY CẬP TẤT CẢ /admin/**
                         .requestMatchers("/api/v1/admin/**")

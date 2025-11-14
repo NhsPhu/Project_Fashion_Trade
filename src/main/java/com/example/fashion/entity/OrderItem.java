@@ -1,41 +1,39 @@
-// src/main/java/com/example/fashion/entity/OrderItem.java
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.math.BigDecimal;
+import java.math.BigDecimal; // <-- THÊM DÒNG NÀY
 
 @Entity
-@Table(name = "order_items")
-@Getter @Setter
+@Table(name = "order_items") // Tên bảng trong file SQL
+@Getter
+@Setter
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Mối quan hệ: NHIỀU OrderItem thuộc về MỘT Order
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
+    // Mối quan hệ: MỘT OrderItem tương ứng với MỘT ProductVariant
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "variant_id", nullable = false)
-    private ProductVariant productVariant;
+    private ProductVariant variant; // Giả sử bạn có Entity ProductVariant
 
     @Column(name = "product_name")
     private String productName;
 
-    @Column(name = "variant_sku")
-    private String variantSku;
-
-    // ĐÃ SỬA: Double → BigDecimal
-    @Column(name = "unit_price", precision = 10, scale = 2, nullable = false)
-    private BigDecimal unitPrice;
-
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "subtotal", precision = 12, scale = 2, nullable = false)
-    private BigDecimal subtotal;
+    @Column(name = "unit_price", nullable = false)
+    private BigDecimal unitPrice; // <-- SỬA LẠI THÀNH BigDecimal
+
+    @Column(name = "subtotal", nullable = false)
+    private BigDecimal subtotal; // <-- SỬA LẠI THÀNH BigDecimal
 }
