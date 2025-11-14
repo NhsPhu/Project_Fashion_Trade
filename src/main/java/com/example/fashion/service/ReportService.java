@@ -8,10 +8,13 @@ import com.example.fashion.entity.Product;
 import com.example.fashion.entity.User;
 import com.example.fashion.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,34 +33,34 @@ public class ReportService {
     private final ProductRepository productRepository;
 
     public ReportResponseDTO.RevenueReport getRevenueReport(String period, LocalDateTime start, LocalDateTime end) {
-        List<Order> orders = orderRepository.findByCreatedAtBetweenAndOrderStatus(start, end, "COMPLETED");
+        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
 
-        Map<LocalDate, List<Order>> grouped = orders.stream()
-                .collect(Collectors.groupingBy(o -> o.getCreatedAt().toLocalDate()));
+        Map<LocalDate, BigDecimal> revenueMap = new HashMap<>();
+        Map<LocalDate, Long> orderCountMap = new HashMap<>();
 
-        List<ReportResponseDTO.DailyRevenue> breakdown = grouped.entrySet().stream()
-                .map(entry -> ReportResponseDTO.DailyRevenue.builder()
-                        .date(entry.getKey())
-                        // SỬA: Dùng lambda thay method reference
-                        .revenue(entry.getValue().stream()
-                                .mapToDouble(o -> {
-                                    BigDecimal amount = o.getFinalAmount();
-                                    return amount != null ? amount.doubleValue() : 0.0;
-                                })
-                                .sum())
-                        .orders(entry.getValue().size())
-                        .build())
-                .sorted(Comparator.comparing(ReportResponseDTO.DailyRevenue::getDate))
-                .collect(Collectors.toList());
+        for (Order order : orders) {
+            LocalDate date = order.getCreatedAt().toLocalDate();
+            BigDecimal amount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+            revenueMap.merge(date, amount, BigDecimal::add);
+            orderCountMap.merge(date, 1L, Long::sum);
+        }
 
-        double totalRevenue = breakdown.stream()
-                .mapToDouble(ReportResponseDTO.DailyRevenue::getRevenue)
-                .sum();
+        List<ReportResponseDTO.DailyRevenue> breakdown = new ArrayList<>();
+        for (LocalDate date = start.toLocalDate(); !date.isAfter(end.toLocalDate()); date = date.plusDays(1)) {
+            breakdown.add(ReportResponseDTO.DailyRevenue.builder()
+                    .date(date)
+                    .revenue(revenueMap.getOrDefault(date, BigDecimal.ZERO).doubleValue())
+                    .orders(orderCountMap.getOrDefault(date, 0L).intValue())
+                    .build());
+        }
+
+        BigDecimal totalRevenue = revenueMap.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return ReportResponseDTO.RevenueReport.builder()
                 .period(period)
-                .totalRevenue(totalRevenue)
-                .totalOrders(orders.size())
+                .totalRevenue(totalRevenue.doubleValue())
+                // SỬA: Integer → Long
+                .totalOrders((int) orders.size())
                 .breakdown(breakdown)
                 .build();
     }
@@ -66,17 +69,11 @@ public class ReportService {
         List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
 
         return ReportResponseDTO.OrderReport.builder()
+                // SỬA: Integer → Long
                 .total((long) orders.size())
-                // SỬA: Dùng lambda
-                .completed(orders.stream()
-                        .filter(o -> "COMPLETED".equals(o.getOrderStatus()))
-                        .count())
-                .cancelled(orders.stream()
-                        .filter(o -> "CANCELLED".equals(o.getOrderStatus()))
-                        .count())
-                .pending(orders.stream()
-                        .filter(o -> "PENDING".equals(o.getOrderStatus()))
-                        .count())
+                .completed(orders.stream().filter(o -> "COMPLETED".equals(o.getOrderStatus())).count())
+                .cancelled(orders.stream().filter(o -> "CANCELLED".equals(o.getOrderStatus())).count())
+                .pending(orders.stream().filter(o -> "PENDING".equals(o.getOrderStatus())).count())
                 .build();
     }
 
@@ -85,7 +82,7 @@ public class ReportService {
                 .map(row -> {
                     Long variantId = (Long) row[0];
                     Long qty = (Long) row[1];
-                    Double revenue = (Double) row[2]; // subtotal đã là Double
+                    Double revenue = (Double) row[2];
                     Product product = productRepository.findByVariantId(variantId).orElse(null);
                     String name = product != null ? product.getName() : "Không xác định";
                     String sku = variantRepository.findById(variantId)
@@ -118,13 +115,61 @@ public class ReportService {
         long newCustomers = userRepository.countByCreatedAtBetween(start, end);
         long totalOrders = orderRepository.countByCreatedAtBetween(start, end);
         long totalUsers = userRepository.count();
+
         double conversionRate = totalUsers > 0 ? (double) totalOrders / totalUsers * 100 : 0;
 
         return ReportResponseDTO.CustomerReport.builder()
-                .newCustomers((int) newCustomers)
+                // SỬA: Integer → Long (nếu DTO dùng Long)
+                .newCustomers((int) newCustomers) // hoặc .newCustomers(newCustomers) nếu DTO dùng Long
                 .conversionRate(Math.round(conversionRate * 100.0) / 100.0)
                 .totalUsers(totalUsers)
                 .totalOrders(totalOrders)
                 .build();
+    }
+
+    public byte[] generateExcelReport(String type, LocalDateTime start, LocalDateTime end) {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Báo cáo");
+
+            int rowNum = 0;
+            Row header = sheet.createRow(rowNum++);
+            header.createCell(0).setCellValue("Loại báo cáo: " + type.toUpperCase());
+            if (start != null && end != null) {
+                header.createCell(1).setCellValue("Từ: " + start + " → " + end);
+            }
+            rowNum++;
+
+            if ("revenue".equalsIgnoreCase(type)) {
+                ReportResponseDTO.RevenueReport report = getRevenueReport("day", start, end);
+                Row title = sheet.createRow(rowNum++);
+                title.createCell(0).setCellValue("DOANH THU THEO NGÀY");
+
+                Row headerRow = sheet.createRow(rowNum++);
+                headerRow.createCell(0).setCellValue("Ngày");
+                headerRow.createCell(1).setCellValue("Doanh thu");
+                headerRow.createCell(2).setCellValue("Số đơn");
+
+                for (ReportResponseDTO.DailyRevenue item : report.getBreakdown()) {
+                    Row row = sheet.createRow(rowNum++);
+                    row.createCell(0).setCellValue(item.getDate().toString());
+                    row.createCell(1).setCellValue(item.getRevenue());
+                    row.createCell(2).setCellValue(item.getOrders());
+                }
+
+                Row total = sheet.createRow(rowNum++);
+                total.createCell(0).setCellValue("TỔNG");
+                total.createCell(1).setCellValue(report.getTotalRevenue());
+                total.createCell(2).setCellValue(report.getTotalOrders());
+            }
+
+            for (int i = 0; i < 3; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi tạo Excel: " + e.getMessage());
+        }
     }
 }

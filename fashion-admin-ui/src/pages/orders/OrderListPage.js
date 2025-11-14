@@ -1,134 +1,100 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+// src/pages/orders/OrderListPage.js
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import OrderService from '../../services/OrderService';
-import { Table, Button, Space, Tag, Typography, Popconfirm } from 'antd'; // Import component AntD
-import { EyeOutlined } from '@ant-design/icons'; // Import icons
+import { Table, Button, Space, Tag, Typography } from 'antd';
+import { EyeOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 
-// (Các hàm tiện ích - nên chuyển vào /utils/helpers.js)
 const formatCurrency = (amount) => {
-    if (typeof amount !== 'number') return 'N/A';
+    if (!amount) return 'N/A';
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 };
+
 const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' };
-    return new Date(dateString).toLocaleDateString('vi-VN', options);
+    return new Date(dateString).toLocaleString('vi-VN', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 };
 
 function OrderListPage() {
-    const navigate = useNavigate(); // Hook để điều hướng
-
-    // 1. State cho dữ liệu
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
-
-    // 2. State cho phân trang (Table tự quản lý)
-    const [pagination, setPagination] = useState({
-        current: 1, // AntD Table bắt đầu từ 1
-        pageSize: 10,
-        total: 0,
-    });
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const paginationRef = useRef({ current: 1, pageSize: 10, total: 0 });
 
-    // 3. Hàm fetch dữ liệu (Cập nhật cho AntD)
-    const fetchOrders = async (page = 1, pageSize = 10) => {
+    const fetchOrders = useCallback(async () => {
+        const { current, pageSize } = paginationRef.current;
         try {
             setLoading(true);
             setError(null);
-
-            // Chuyển đổi (AntD page 1 = Spring Page 0)
-            const springPage = page - 1;
+            const springPage = current - 1;
             const data = await OrderService.getAllOrders(springPage, pageSize, "createdAt,desc");
-
             setOrders(data.content);
-            setPagination({
+            paginationRef.current = {
                 current: data.number + 1,
                 pageSize: data.size,
-                total: data.totalElements, // Tổng số phần tử
-            });
-
+                total: data.totalElements,
+            };
         } catch (err) {
-            setError(err.message);
+            setError(err.message || 'Lỗi tải đơn hàng');
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // 4. useEffect: Tải dữ liệu khi mount
     useEffect(() => {
-        fetchOrders(pagination.current, pagination.pageSize);
-    }, []); // Chỉ tải 1 lần khi mount
+        fetchOrders();
+    }, [fetchOrders]);
 
-    // 5. Xử lý khi Table thay đổi (đổi trang, sắp xếp...)
-    const handleTableChange = (newPagination) => {
-        fetchOrders(newPagination.current, newPagination.pageSize);
+    const handleTableChange = (pag) => {
+        paginationRef.current.current = pag.current;
+        paginationRef.current.pageSize = pag.pageSize;
+        fetchOrders();
     };
 
-    // 6. Định nghĩa các cột (columns) cho Table
     const columns = [
-        {
-            title: 'Mã ĐH',
-            dataIndex: 'orderNo',
-            key: 'orderNo',
-        },
+        { title: 'ID', dataIndex: 'id', key: 'id' },
         {
             title: 'Khách hàng',
-            dataIndex: 'shippingName',
-            key: 'shippingName',
-            render: (text, record) => (
-                <div>
-                    <div>{text}</div>
-                    <small>{record.userEmail}</small>
-                </div>
-            )
+            dataIndex: 'customerName',
+            key: 'customerName',
+            render: (text) => text || 'Khách lẻ'  // SỬA: luôn hiển thị tên hoặc fallback
         },
-        {
-            title: 'Ngày đặt',
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            render: (text) => formatDate(text),
-        },
-        {
-            title: 'Tổng tiền',
-            dataIndex: 'totalAmount',
-            key: 'totalAmount',
-            render: (amount) => formatCurrency(amount),
-        },
+        { title: 'Ngày đặt', dataIndex: 'createdAt', key: 'createdAt', render: formatDate },
+        { title: 'Tổng tiền', dataIndex: 'totalAmount', key: 'totalAmount', render: formatCurrency },
         {
             title: 'Trạng thái ĐH',
             dataIndex: 'orderStatus',
             key: 'orderStatus',
             render: (status) => {
-                let color = 'geekblue';
-                if (status === 'Delivered') color = 'green';
-                if (status === 'Cancelled') color = 'red';
-                if (status === 'Shipped') color = 'orange';
-                return <Tag color={color}>{status.toUpperCase()}</Tag>;
+                if (!status) return <Tag color="default">N/A</Tag>;
+                const colorMap = { Pending: 'gold', Shipped: 'orange', Delivered: 'green', Cancelled: 'red' };
+                return <Tag color={colorMap[status] || 'geekblue'}>{status.toUpperCase()}</Tag>;
             }
         },
         {
             title: 'Trạng thái TT',
             dataIndex: 'payStatus',
             key: 'payStatus',
-            render: (status) => (
-                <Tag color={status === 'Paid' ? 'green' : 'volcano'}>
-                    {status.toUpperCase()}
-                </Tag>
-            ),
+            render: (status) => {
+                if (!status) return <Tag color="default">N/A</Tag>;
+                return <Tag color={status === 'Paid' ? 'green' : 'volcano'}>{status.toUpperCase()}</Tag>;
+            },
         },
         {
             title: 'Hành động',
             key: 'action',
-            render: (text, record) => (
+            render: (_, record) => (
                 <Space size="middle">
-                    <Button
-                        type="primary"
-                        icon={<EyeOutlined />}
-                        onClick={() => navigate(`/admin/orders/${record.id}`)} // Điều hướng
-                    >
+                    <Button type="primary" icon={<EyeOutlined />} onClick={() => navigate(`/admin/orders/${record.id}`)}>
                         Xem
                     </Button>
                 </Space>
@@ -136,23 +102,23 @@ function OrderListPage() {
         },
     ];
 
-    // 7. Render Giao diện
     return (
         <div>
             <Space direction="vertical" style={{ width: '100%' }}>
                 <Title level={2}>Quản lý Đơn hàng</Title>
-
-                {error && <p style={{color: 'red'}}>Lỗi: {error}</p>}
-
+                {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
                 <Table
                     columns={columns}
-                    dataSource={orders} // Dữ liệu
-                    rowKey="id" // Khóa chính
-                    pagination={pagination} // Cấu hình phân trang
-                    loading={loading} // Hiệu ứng tải
-                    onChange={handleTableChange} // Xử lý khi đổi trang
+                    dataSource={orders}
+                    rowKey="id"
+                    pagination={{
+                        current: paginationRef.current.current,
+                        pageSize: paginationRef.current.pageSize,
+                        total: paginationRef.current.total,
+                    }}
+                    loading={loading}
+                    onChange={handleTableChange}
                     bordered
-                    // Cho phép cuộn ngang trên màn hình nhỏ
                     scroll={{ x: 'max-content' }}
                 />
             </Space>

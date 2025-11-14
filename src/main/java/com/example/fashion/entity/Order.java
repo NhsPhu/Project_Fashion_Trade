@@ -2,82 +2,80 @@
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "orders")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
 public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "order_no", unique = true, nullable = false)
+    @Column(name = "order_no")
     private String orderNo;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    // ĐÃ SỬA: Double → BigDecimal
-    @Column(name = "total_amount", precision = 12, scale = 2)
+    // BẮT BUỘC: ÁNH XẠ ĐÚNG CỘT TRONG DB
+    @Column(name = "customer_name")
+    private String customerName;
+
+    @Column(name = "total_amount")
     private BigDecimal totalAmount;
 
-    @Column(name = "shipping_fee", precision = 10, scale = 2)
-    private BigDecimal shippingFee = BigDecimal.ZERO;
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee;
 
-    @Column(name = "discount_amount", precision = 10, scale = 2)
-    private BigDecimal discountAmount = BigDecimal.ZERO;
+    @Column(name = "discount_amount")
+    private BigDecimal discountAmount;
 
-    @Column(name = "final_amount", precision = 12, scale = 2)
-    private BigDecimal finalAmount;
-
-    @Column(name = "pay_status", length = 20)
+    @Column(name = "pay_status")
     private String payStatus;
 
-    @Column(name = "order_status", length = 20)
+    @Column(name = "order_status")
     private String orderStatus;
 
-    @Column(name = "payment_method", length = 50)
+    @Column(name = "payment_method")
     private String paymentMethod;
 
-    @Column(name = "tracking_number", length = 100)
+    @Column(name = "tracking_number")
     private String trackingNumber;
 
-    // SHIPPING INFO
-    @Column(name = "shipping_name", length = 100)
+    // Thông tin shipping
+    @Column(name = "shipping_name")
     private String shippingName;
 
-    @Column(name = "shipping_phone", length = 20)
+    @Column(name = "shipping_phone")
     private String shippingPhone;
 
-    @Column(name = "shipping_address_line", length = 255)
+    @Column(name = "shipping_address_line")
     private String shippingAddressLine;
 
-    @Column(name = "shipping_city", length = 100)
+    @Column(name = "shipping_city")
     private String shippingCity;
 
-    @Column(name = "shipping_district", length = 100)
+    @Column(name = "shipping_district")
     private String shippingDistrict;
 
-    @Column(name = "shipping_province", length = 100)
+    @Column(name = "shipping_province")
     private String shippingProvince;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<OrderItem> items;
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    private Set<OrderItem> items;
 }

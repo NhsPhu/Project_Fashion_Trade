@@ -1,5 +1,5 @@
 // src/pages/coupon/CouponFormPage.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Form, Input, Button, Card, Select, DatePicker, InputNumber, notification, Spin } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import CouponService from '../../services/CouponService';
@@ -14,14 +14,7 @@ const CouponFormPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if (id) {
-            setIsEdit(true);
-            loadCoupon();
-        }
-    }, [id]);
-
-    const loadCoupon = async () => {
+    const loadCoupon = useCallback(async () => {
         setLoading(true);
         try {
             const data = await CouponService.getById(id);
@@ -35,7 +28,14 @@ const CouponFormPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, form]);
+
+    useEffect(() => {
+        if (id) {
+            setIsEdit(true);
+            loadCoupon();
+        }
+    }, [id, loadCoupon]);
 
     const onFinish = async (values) => {
         setLoading(true);
@@ -67,24 +67,13 @@ const CouponFormPage = () => {
 
     return (
         <Card style={{ maxWidth: 700, margin: '40px auto' }}>
-            <h2 style={{ textAlign: 'center' }}>
-                {isEdit ? 'Cập nhật mã giảm giá' : 'Tạo mã giảm giá mới'}
-            </h2>
-
+            <h2 style={{ textAlign: 'center', marginBottom: 24 }}>{isEdit ? 'Chỉnh sửa mã giảm giá' : 'Tạo mã giảm giá mới'}</h2>
             <Form form={form} layout="vertical" onFinish={onFinish}>
-                <Form.Item
-                    name="code"
-                    label="Mã giảm giá"
-                    rules={[{ required: true }, { min: 3, max: 20 }]}
-                >
+                <Form.Item name="code" label="Mã giảm giá" rules={[{ required: true }]}>
                     <Input placeholder="SUMMER2025" />
                 </Form.Item>
 
-                <Form.Item
-                    name="type"
-                    label="Loại giảm giá"
-                    rules={[{ required: true }]}
-                >
+                <Form.Item name="type" label="Loại giảm giá" rules={[{ required: true }]}>
                     <Select placeholder="Chọn loại">
                         <Option value="PERCENT">Phần trăm (%)</Option>
                         <Option value="FIXED">Số tiền cố định</Option>
@@ -92,16 +81,8 @@ const CouponFormPage = () => {
                     </Select>
                 </Form.Item>
 
-                <Form.Item
-                    name="value"
-                    label="Giá trị giảm"
-                    rules={[{ required: true, type: 'number', min: 0 }]}
-                >
-                    <InputNumber
-                        style={{ width: '100%' }}
-                        formatter={value => `${value}`}
-                        parser={value => value.replace(/\D/g, '')}
-                    />
+                <Form.Item name="value" label="Giá trị giảm" rules={[{ required: true, type: 'number', min: 0 }]}>
+                    <InputNumber style={{ width: '100%' }} formatter={value => `${value}`} parser={value => value.replace(/\D/g, '')} />
                 </Form.Item>
 
                 <Form.Item name="minOrderValue" label="Tổng đơn tối thiểu (để áp dụng)">
@@ -116,11 +97,7 @@ const CouponFormPage = () => {
                     <DatePicker style={{ width: '100%' }} showTime />
                 </Form.Item>
 
-                <Form.Item
-                    name="usageLimit"
-                    label="Giới hạn lượt dùng"
-                    rules={[{ required: true, type: 'number', min: 1 }]}
-                >
+                <Form.Item name="usageLimit" label="Giới hạn lượt dùng" rules={[{ required: true, type: 'number', min: 1 }]}>
                     <InputNumber style={{ width: '100%' }} />
                 </Form.Item>
 

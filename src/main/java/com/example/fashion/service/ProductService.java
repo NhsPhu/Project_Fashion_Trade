@@ -76,9 +76,9 @@ public class ProductService {
         productRepository.deleteById(id);
     }
 
-    // GET ALL
+    // GET ALL - SỬA: Sử dụng query load variants
     public Page<ProductResponseDTO> getAllProducts(Pageable pageable) {
-        return productRepository.findAll(pageable)
+        return productRepository.findAllWithVariants(pageable)
                 .map(ProductResponseDTO::fromProduct);
     }
 

@@ -1,21 +1,18 @@
 // src/services/ReportService.js
 import axios from 'axios';
-import moment from 'moment';
 
-const API_URL = 'http://localhost:8080/api/v1/admin/reports';
+const API_URL = '/api/v1/admin/reports';
 
-const formatDate = (date) => date.format('YYYY-MM-DDTHH:mm:ss');
-
-export default {
+const ReportService = {
     getRevenue: async (period, start, end) => {
         const res = await axios.get(`${API_URL}/revenue`, {
-            params: { period, start: formatDate(start), end: formatDate(end) }
+            params: { period, start: start.format('YYYY-MM-DDTHH:mm:ss'), end: end.format('YYYY-MM-DDTHH:mm:ss') }
         });
         return res.data;
     },
     getOrders: async (start, end) => {
         const res = await axios.get(`${API_URL}/orders`, {
-            params: { start: formatDate(start), end: formatDate(end) }
+            params: { start: start.format('YYYY-MM-DDTHH:mm:ss'), end: end.format('YYYY-MM-DDTHH:mm:ss') }
         });
         return res.data;
     },
@@ -29,8 +26,35 @@ export default {
     },
     getCustomers: async (start, end) => {
         const res = await axios.get(`${API_URL}/customers`, {
-            params: { start: formatDate(start), end: formatDate(end) }
+            params: { start: start.format('YYYY-MM-DDTHH:mm:ss'), end: end.format('YYYY-MM-DDTHH:mm:ss') }
         });
         return res.data;
     },
+
+    // THÊM: Xuất Excel
+    exportExcel: async (type, start, end) => {
+        const params = { type };
+        if (start && end) {
+            params.start = start.format('YYYY-MM-DDTHH:mm:ss');
+            params.end = end.format('YYYY-MM-DDTHH:mm:ss');
+        }
+
+        const response = await axios.get(`${API_URL}/export/excel`, {
+            params,
+            responseType: 'blob'  // BẮT BUỘC để tải file
+        });
+
+        // Tạo link tải
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        const filename = response.headers['content-disposition']?.match(/filename="(.+)"/)?.[1] || 'bao_cao.xlsx';
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    },
 };
+
+export default ReportService;

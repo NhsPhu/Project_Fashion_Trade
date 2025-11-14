@@ -1,5 +1,6 @@
+// src/pages/categories/CategoryListPage.js
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import CategoryService from '../../services/CategoryService';
 import {
     Table,
@@ -20,7 +21,6 @@ function CategoryListPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // 1. Hàm tải dữ liệu
     const fetchCategories = async () => {
         try {
             setLoading(true);
@@ -35,46 +35,25 @@ function CategoryListPage() {
         }
     };
 
-    // 2. useEffect: Tải khi mount
     useEffect(() => {
         fetchCategories();
     }, []);
 
-    // 3. Hàm xử lý Xóa
     const handleDelete = async (id) => {
         try {
             await CategoryService.deleteCategory(id);
             notification.success({ message: 'Xóa danh mục thành công.' });
-            fetchCategories(); // Tải lại danh sách
+            fetchCategories();
         } catch (err) {
             notification.error({ message: 'Lỗi khi xóa danh mục', description: err.message });
         }
     };
 
-    // 4. Định nghĩa các cột (columns) cho Table
     const columns = [
-        {
-            title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
-            sorter: (a, b) => a.id - b.id,
-        },
-        {
-            title: 'Tên',
-            dataIndex: 'name',
-            key: 'name',
-        },
-        {
-            title: 'Slug',
-            dataIndex: 'slug',
-            key: 'slug',
-        },
-        {
-            title: 'Danh mục cha',
-            dataIndex: 'parentName',
-            key: 'parentName',
-            render: (parentName) => parentName || 'N/A',
-        },
+        { title: 'ID', dataIndex: 'id', key: 'id', sorter: (a, b) => a.id - b.id },
+        { title: 'Tên', dataIndex: 'name', key: 'name' },
+        { title: 'Slug', dataIndex: 'slug', key: 'slug' },
+        { title: 'Danh mục cha', dataIndex: 'parentName', key: 'parentName', render: (parentName) => parentName || 'N/A' },
         {
             title: 'Trạng thái',
             dataIndex: 'active',
@@ -113,7 +92,6 @@ function CategoryListPage() {
         },
     ];
 
-    // 5. Render
     return (
         <div>
             <Space direction="vertical" style={{ width: '100%' }}>
@@ -128,7 +106,7 @@ function CategoryListPage() {
                     Thêm danh mục mới
                 </Button>
 
-                {error && <p style={{color: 'red'}}>Lỗi: {error}</p>}
+                {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
 
                 <Table
                     columns={columns}

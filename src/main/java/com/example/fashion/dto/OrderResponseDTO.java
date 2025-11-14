@@ -1,7 +1,8 @@
+// src/main/java/com/example/fashion/dto/OrderResponseDTO.java
 package com.example.fashion.dto;
 
 import com.example.fashion.entity.Order;
-import jakarta.persistence.EntityNotFoundException; // <-- 1. Import
+import jakarta.persistence.EntityNotFoundException;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,11 +19,11 @@ public class OrderResponseDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Thông tin User
     private Long userId;
     private String userEmail;
 
-    // (Các trường khác...)
+    private String customerName; // Từ customer_name (DB) → ưu tiên, nếu null thì dùng shipping_name
+
     private BigDecimal totalAmount;
     private BigDecimal shippingFee;
     private BigDecimal discountAmount;
@@ -38,9 +39,6 @@ public class OrderResponseDTO {
     private String shippingProvince;
     private Set<OrderItemResponseDTO> items;
 
-    /**
-     * Chuyển đổi từ Entity sang DTO
-     */
     public static OrderResponseDTO fromOrder(Order order) {
         OrderResponseDTO dto = new OrderResponseDTO();
         dto.setId(order.getId());
@@ -48,20 +46,22 @@ public class OrderResponseDTO {
         dto.setCreatedAt(order.getCreatedAt());
         dto.setUpdatedAt(order.getUpdatedAt());
 
-        // ========== SỬA LỖI Ở ĐÂY ==========
-        // Chúng ta dùng try-catch để xử lý trường hợp User bị xóa
         try {
             if (order.getUser() != null) {
-                // Dòng này sẽ gây lỗi nếu User (Proxy) không tìm thấy ID
                 dto.setUserId(order.getUser().getId());
                 dto.setUserEmail(order.getUser().getEmail());
             }
         } catch (EntityNotFoundException e) {
-            // Nếu User không còn tồn tại (ví dụ: User ID 3 đã bị xóa)
-            dto.setUserId(null); // Ghi nhận là không có ID
-            dto.setUserEmail("[Người dùng đã bị xóa]"); // Hiển thị thông báo
+            dto.setUserId(null);
+            dto.setUserEmail("[Người dùng đã bị xóa]");
         }
-        // ===================================
+
+        // SỬA: Ưu tiên customer_name → shipping_name → "Khách lẻ"
+        String name = order.getCustomerName();
+        if (name == null || name.trim().isEmpty()) {
+            name = order.getShippingName();
+        }
+        dto.setCustomerName(name != null && !name.trim().isEmpty() ? name.trim() : "Khách lẻ");
 
         dto.setTotalAmount(order.getTotalAmount());
         dto.setShippingFee(order.getShippingFee());

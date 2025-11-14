@@ -1,5 +1,6 @@
+// src/pages/brands/BrandListPage.js
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import BrandService from '../../services/BrandService';
 import {
     Table,
@@ -19,7 +20,6 @@ function BrandListPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // 1. Hàm tải dữ liệu
     const fetchBrands = async () => {
         try {
             setLoading(true);
@@ -34,40 +34,24 @@ function BrandListPage() {
         }
     };
 
-    // 2. useEffect: Tải khi mount
     useEffect(() => {
         fetchBrands();
     }, []);
 
-    // 3. Hàm xử lý Xóa
     const handleDelete = async (id) => {
         try {
             await BrandService.deleteBrand(id);
             notification.success({ message: 'Xóa thương hiệu thành công.' });
-            fetchBrands(); // Tải lại danh sách
+            fetchBrands();
         } catch (err) {
             notification.error({ message: 'Lỗi khi xóa thương hiệu', description: err.message });
         }
     };
 
-    // 4. Định nghĩa các cột (columns) cho Table
     const columns = [
-        {
-            title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
-            sorter: (a, b) => a.id - b.id,
-        },
-        {
-            title: 'Tên',
-            dataIndex: 'name',
-            key: 'name',
-        },
-        {
-            title: 'Slug',
-            dataIndex: 'slug',
-            key: 'slug',
-        },
+        { title: 'ID', dataIndex: 'id', key: 'id', sorter: (a, b) => a.id - b.id },
+        { title: 'Tên', dataIndex: 'name', key: 'name' },
+        { title: 'Slug', dataIndex: 'slug', key: 'slug' },
         {
             title: 'Hành động',
             key: 'action',
@@ -96,7 +80,6 @@ function BrandListPage() {
         },
     ];
 
-    // 5. Render
     return (
         <div>
             <Space direction="vertical" style={{ width: '100%' }}>
@@ -111,7 +94,7 @@ function BrandListPage() {
                     Thêm thương hiệu mới
                 </Button>
 
-                {error && <p style={{color: 'red'}}>Lỗi: {error}</p>}
+                {error && <p style={{ color: 'red' }}>Lỗi: {error}</p>}
 
                 <Table
                     columns={columns}

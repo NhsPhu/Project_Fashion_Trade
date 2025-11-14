@@ -1,12 +1,12 @@
 // src/pages/report/ReportDashboard.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Row, Col, Statistic, DatePicker, Button, Table, Tag, Space } from 'antd';
-import { DownloadOutlined, BarChartOutlined } from '@ant-design/icons';
+import { DownloadOutlined} from '@ant-design/icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ReportService from '../../services/ReportService';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
-import InventoryService from '../../services/InventoryService'; // THÊM import này để lấy tồn kho thấp từ InventoryService
+import InventoryService from '../../services/InventoryService';
 
 const { RangePicker } = DatePicker;
 
@@ -20,7 +20,7 @@ const ReportDashboard = () => {
 
     const navigate = useNavigate();
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         const [start, end] = dateRange;
         try {
@@ -28,7 +28,7 @@ const ReportDashboard = () => {
                 ReportService.getRevenue('day', start, end),
                 ReportService.getOrders(start, end),
                 ReportService.getTopProducts(5),
-                InventoryService.getLowStock(), // SỬA: Sử dụng InventoryService.getLowStock() để lấy dữ liệu tồn kho thấp từ inventory table
+                InventoryService.getLowStock(),
                 ReportService.getCustomers(start, end)
             ]);
 
@@ -55,52 +55,42 @@ const ReportDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [dateRange]);
 
     useEffect(() => {
         fetchData();
-    }, [dateRange]);
+    }, [fetchData]);
 
     const columnsTop = [
-        { title: 'Sản phẩm', dataIndex: 'productName', key: 'name' },
-        { title: 'SKU', dataIndex: 'sku', key: 'sku' },
-        {
-            title: 'Đã bán',
-            dataIndex: 'soldQuantity',
-            key: 'qty',
-            render: qty => <Tag color="blue">{qty}</Tag>
-        },
-        {
-            title: 'Doanh thu',
-            dataIndex: 'revenue',
-            render: val => `₫${val?.toLocaleString()}`
-        },
+        { title: 'Sản phẩm', dataIndex: 'productName', key: 'productName' },
+        { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
+        { title: 'Doanh thu', dataIndex: 'revenue', key: 'revenue', render: (revenue) => `₫${revenue.toLocaleString()}` },
     ];
 
     const columnsLow = [
-        { title: 'SKU', dataIndex: 'sku', key: 'sku' },
-        { title: 'Sản phẩm', dataIndex: 'productName', key: 'name' },
-        {
-            title: 'Tồn kho',
-            dataIndex: 'currentStock',
-            render: stock => <Tag color={stock <= 3 ? 'red' : 'orange'}>{stock}</Tag>
-        },
+        { title: 'Sản phẩm', dataIndex: 'productName', key: 'productName' },
+        { title: 'Biến thể', dataIndex: 'variantName', key: 'variantName' },
+        { title: 'Tồn kho', dataIndex: 'quantity', key: 'quantity', render: (qty) => <Tag color="red">{qty}</Tag> },
     ];
 
     return (
-        <div style={{ padding: 20 }}>
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2><BarChartOutlined /> Báo cáo & Thống kê</h2>
-                    <Space>
+        <div>
+            <Space direction="vertical" style={{ width: '100%' }}>
+                <Row gutter={16} align="middle">
+                    <Col>
                         <RangePicker
                             value={dateRange}
                             onChange={setDateRange}
-                            format="DD/MM/YYYY"
+                            format="YYYY-MM-DD"
                         />
-                        <Button icon={<DownloadOutlined />}>Export PDF</Button>
-                    </Space>
-                </div>
+                    </Col>
+                    <Col>
+                        <Button type="primary" onClick={fetchData}>Tải báo cáo</Button>
+                    </Col>
+                    <Col flex="auto" style={{ textAlign: 'right' }}>
+                        <Button icon={<DownloadOutlined />}>Xuất Excel</Button>
+                    </Col>
+                </Row>
 
                 <Row gutter={16}>
                     <Col span={6}>
@@ -110,9 +100,22 @@ const ReportDashboard = () => {
                     </Col>
                     <Col span={6}>
                         <Card loading={loading}>
-                            <Statistic title="Tổng đơn" value={stats.totalOrders} />
+                            <Statistic title="Tổng đơn hàng" value={stats.totalOrders} />
                         </Card>
                     </Col>
+                    <Col span={6}>
+                        <Card loading={loading}>
+                            <Statistic title="Đơn hoàn thành" value={stats.completed} />
+                        </Card>
+                    </Col>
+                    <Col span={6}>
+                        <Card loading={loading}>
+                            <Statistic title="Đơn hủy" value={stats.cancelled} />
+                        </Card>
+                    </Col>
+                </Row>
+
+                <Row gutter={16}>
                     <Col span={6}>
                         <Card loading={loading}>
                             <Statistic title="Khách mới" value={stats.newCustomers} />

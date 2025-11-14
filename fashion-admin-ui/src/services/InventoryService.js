@@ -1,7 +1,7 @@
 // src/services/InventoryService.js
 import axios from 'axios';
 
-const API_URL = '/api/v1/admin/inventory'; // Dùng relative URL → proxy tốt hơn
+const API_URL = '/api/v1/admin/inventory';
 
 const getHeaders = () => {
     const token = localStorage.getItem('token');
@@ -11,13 +11,13 @@ const getHeaders = () => {
     };
 };
 
-export default {
+const InventoryService = {
     /**
      * Lấy danh sách hàng sắp hết kho (toàn hệ thống)
      */
     getLowStock: async () => {
         const response = await axios.get(`${API_URL}/low-stock`, { headers: getHeaders() });
-        return response.data; // List<LowStockItem>
+        return response.data;
     },
 
     /**
@@ -28,7 +28,7 @@ export default {
             `${API_URL}/${variantId}/${warehouseId}`,
             { headers: getHeaders() }
         );
-        return response.data; // StockInfo
+        return response.data;
     },
 
     /**
@@ -37,6 +37,8 @@ export default {
     updateStock: async ({ variantId, warehouseId, quantity, action }) => {
         const payload = { variantId, warehouseId, quantity, action };
         const response = await axios.post(API_URL, payload, { headers: getHeaders() });
-        return response.data; // UpdateSuccess
+        return response.data;
     },
 };
+
+export default InventoryService;

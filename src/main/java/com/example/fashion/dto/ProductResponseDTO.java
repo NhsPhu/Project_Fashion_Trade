@@ -6,6 +6,7 @@ import com.example.fashion.entity.ProductVariant;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -26,10 +27,12 @@ public class ProductResponseDTO {
     private Long brandId;
     private String brandName;
 
+    private BigDecimal price; // THÊM: lấy từ variant đầu tiên
+    private String sku; // THÊM: lấy từ variant đầu tiên
     private List<VariantDTO> variants;
 
     public static ProductResponseDTO fromProduct(Product product) {
-        return ProductResponseDTO.builder()
+        ProductResponseDTO dto = ProductResponseDTO.builder()
                 .id(product.getId())
                 .name(product.getName())
                 .slug(product.getSlug())
@@ -49,6 +52,15 @@ public class ProductResponseDTO {
                         .toList()
                         : null)
                 .build();
+
+        // SỬA: Lấy price & sku từ variant đầu tiên
+        if (dto.getVariants() != null && !dto.getVariants().isEmpty()) {
+            VariantDTO firstVariant = dto.getVariants().get(0);
+            dto.setPrice(firstVariant.getPrice());
+            dto.setSku(firstVariant.getSku());
+        }
+
+        return dto;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
