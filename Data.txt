@@ -163,3 +163,11 @@ ON DUPLICATE KEY UPDATE
     quantity = new.quantity,
     low_stock_threshold = new.low_stock_threshold,
     last_updated = NOW();
+-- ==========================================================
+-- BƯỚC 13: COUPON
+-- ==========================================================
+INSERT IGNORE INTO coupon 
+(id, code, type, value, min_order_value, start_date, end_date, usage_limit, used_count, active) 
+VALUES 
+(1, 'SALE10', 'PERCENT', 10.00, 500000.00, '2025-11-01 00:00:00', '2025-12-31 23:59:59', 100, 0, true),
+(2, 'FREESHIP', 'FREE_SHIPPING', 0.00, 300000.00, '2025-11-01 00:00:00', '2025-12-31 23:59:59', 50, 0, true);
