@@ -3,7 +3,7 @@ package com.example.fashion.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.math.BigDecimal; // THÊM import
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,9 +20,8 @@ public class Coupon {
     private String code;
 
     @Column(nullable = false, length = 20)
-    private String type; // PERCENT, FIXED, FREE_SHIPPING
+    private String type;
 
-    // ĐÃ SỬA: Double → BigDecimal + scale
     @Column(name = "value", precision = 10, scale = 2)
     private BigDecimal value;
 
@@ -49,8 +48,10 @@ public class Coupon {
     private Integer usageLimit;
 
     @Column(name = "used_count")
+    @Builder.Default
     private Integer usedCount = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean active = true;
 }

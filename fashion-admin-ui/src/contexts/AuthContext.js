@@ -1,9 +1,8 @@
 // src/contexts/AuthContext.js
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import AuthService from '../services/AuthService';
 import axios from 'axios';
 
-// baseURL CHỈ là địa chỉ server (port 8080), KHÔNG bao gồm /api/v1
 axios.defaults.baseURL = 'http://localhost:8080';
 
 const AuthContext = createContext();
@@ -53,4 +52,11 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
-export default AuthContext;
+// THÊM DÒNG NÀY
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth phải được dùng bên trong AuthProvider');
+    }
+    return context;
+};

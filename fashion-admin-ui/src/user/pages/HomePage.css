@@ -1,0 +1,30 @@
+.home-page {
+  min-height: 100vh;
+}
+
+.home-carousel {
+  margin-bottom: 48px;
+}
+
+.carousel-slide {
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.carousel-content {
+  text-align: center;
+  padding: 48px;
+}
+
+.home-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+
+
+

@@ -1,3 +1,4 @@
+// src/main/java/com/example/fashion/dto/InventoryResponseDTO.java
 package com.example.fashion.dto;
 
 import lombok.*;
@@ -27,7 +28,8 @@ public class InventoryResponseDTO {
 
     @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
     public static class UpdateSuccess {
-        private boolean success = true;
+        @Builder.Default                  // ← THÊM DÒNG NÀY
+        private boolean success = true;   // ← Bây giờ Lombok sẽ giữ lại giá trị default
         private String message;
     }
 }

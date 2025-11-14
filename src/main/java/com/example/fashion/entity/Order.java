@@ -1,4 +1,3 @@
-// src/main/java/com/example/fashion/entity/Order.java
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
@@ -32,7 +31,6 @@ public class Order {
     @JoinColumn(name = "user_id")
     private User user;
 
-    // BẮT BUỘC: ÁNH XẠ ĐÚNG CỘT TRONG DB
     @Column(name = "customer_name")
     private String customerName;
 
@@ -44,6 +42,12 @@ public class Order {
 
     @Column(name = "discount_amount")
     private BigDecimal discountAmount;
+
+    // ======================================
+    // ===== TRƯỜNG BỊ THIẾU ĐÃ ĐƯỢC THÊM =====
+    @Column(name = "final_amount", precision = 12, scale = 2)
+    private BigDecimal finalAmount;
+    // ======================================
 
     @Column(name = "pay_status")
     private String payStatus;

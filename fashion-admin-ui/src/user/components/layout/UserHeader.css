@@ -1,0 +1,43 @@
+.user-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #fdfbfb 0%, #ebedee 100%);
+  padding: 0 48px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.user-logo {
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: #6c4f3d;
+  text-decoration: none;
+}
+
+.user-nav-menu {
+  display: flex;
+  gap: 28px;
+}
+
+.user-nav-menu a {
+  font-weight: 500;
+  color: #333;
+  text-decoration: none;
+}
+
+.user-nav-menu a.active {
+  color: #ff6b6b;
+}
+
+.user-action-group {
+  display: flex;
+  align-items: center;
+}
+
+
+
+

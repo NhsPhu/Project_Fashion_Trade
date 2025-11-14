@@ -12,16 +12,17 @@ import java.util.List;
 @Repository
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
+    // ĐÃ SỬA ĐÚNG 100% – DÙNG "variant" THAY VÌ "productVariant"
     @Query("""
         SELECT 
-            oi.productVariant.id,
-            SUM(oi.quantity),
-            SUM(oi.subtotal)
+            oi.variant.id,
+            SUM(oi.quantity) AS totalQuantity,
+            SUM(oi.subtotal) AS totalRevenue
         FROM OrderItem oi
         JOIN oi.order o
         WHERE o.orderStatus = 'COMPLETED'
-        GROUP BY oi.productVariant.id
-        ORDER BY SUM(oi.quantity) DESC
+        GROUP BY oi.variant.id
+        ORDER BY totalQuantity DESC
         """)
     List<Object[]> findTopSellingProducts(Pageable pageable);
 }
