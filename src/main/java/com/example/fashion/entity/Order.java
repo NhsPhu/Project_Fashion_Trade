@@ -1,21 +1,17 @@
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
+import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
 @Table(name = "orders")
-@Getter
-@Setter
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder // THÊM @Builder
 public class Order {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "order_no")
@@ -34,20 +30,19 @@ public class Order {
     @Column(name = "customer_name")
     private String customerName;
 
-    @Column(name = "total_amount")
+    @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
-    @Column(name = "shipping_fee")
-    private BigDecimal shippingFee;
+    @Column(name = "shipping_fee", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal shippingFee = BigDecimal.ZERO;
 
-    @Column(name = "discount_amount")
-    private BigDecimal discountAmount;
+    @Column(name = "discount_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    // ======================================
-    // ===== TRƯỜNG BỊ THIẾU ĐÃ ĐƯỢC THÊM =====
-    @Column(name = "final_amount", precision = 12, scale = 2)
+    @Column(name = "final_amount", precision = 15, scale = 2)
     private BigDecimal finalAmount;
-    // ======================================
 
     @Column(name = "pay_status")
     private String payStatus;
@@ -61,7 +56,6 @@ public class Order {
     @Column(name = "tracking_number")
     private String trackingNumber;
 
-    // Thông tin shipping
     @Column(name = "shipping_name")
     private String shippingName;
 
@@ -80,6 +74,17 @@ public class Order {
     @Column(name = "shipping_province")
     private String shippingProvince;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<OrderItem> items;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

@@ -1,75 +1,65 @@
+// src/services/AuthService.js
 import axios from 'axios';
 
-// 1. Đảm bảo cổng (port) này khớp với backend của bạn (8080 hoặc 8083)
 const API_BASE_URL = 'http://localhost:8080/api/v1';
-
-/**
- * Tạo một "instance" của axios
- * (Chúng ta dùng apiClient riêng cho Auth để không bị xung đột
- * với 'axios.defaults' mà AuthContext quản lý)
- */
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json'
-    }
+    headers: { 'Content-Type': 'application/json' }
 });
 
 const AuthService = {
 
-    /**
-     * API Đăng nhập
-     */
-    login: async (email, password) => {
+    // ĐĂNG NHẬP + 2FA
+    login: async (email, password, totpCode = null) => {
         try {
-            const response = await apiClient.post('/auth/login', {
-                email: email,
-                password: password
-            });
+            const payload = totpCode
+                ? { sessionToken: localStorage.getItem('session_token'), totpCode }
+                : { email, password };
 
-            if (response.data && response.data.accessToken) {
-                const token = response.data.accessToken;
-                localStorage.setItem('admin_token', token);
-                return token;
-            } else {
-                throw new Error('Phản hồi không hợp lệ từ máy chủ');
+            const endpoint = totpCode ? '/auth/verify-2fa' : '/auth/login';
+
+            const response = await apiClient.post(endpoint, payload);
+            const data = response.data;
+
+            if (data.requires2FA) {
+                localStorage.setItem('session_token', data.sessionToken);
+                return { requires2FA: true, sessionToken: data.sessionToken };
             }
+
+            const token = data.accessToken;
+            localStorage.setItem('admin_token', token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            localStorage.removeItem('session_token');
+            return { token, user: data.user };
+
         } catch (error) {
-            console.error('Lỗi đăng nhập:', error.response?.data || error.message);
-            throw new Error(error.response?.data || 'Đăng nhập thất bại');
+            localStorage.removeItem('session_token');
+            throw new Error(error.response?.data?.message || 'Đăng nhập thất bại');
         }
     },
 
-    // ========== 2. THÊM HÀM MỚI ==========
-    /**
-     * API Đăng ký Khách hàng
-     * @param {object} registerData (chứa fullName, email, password, phone)
-     */
+    // ĐĂNG KÝ
     register: async (registerData) => {
         try {
-            // Gọi API /register mới
             const response = await apiClient.post('/auth/register', registerData);
-            return response.data; // Trả về thông báo thành công
+            return response.data;
         } catch (error) {
-            console.error('Lỗi đăng ký:', error.response?.data || error.message);
-            // Ném lỗi (ví dụ: "Email đã được sử dụng")
-            throw new Error(error.response?.data || 'Đăng ký thất bại');
+            throw new Error(error.response?.data?.message || 'Đăng ký thất bại');
         }
     },
-    // ===================================
 
-    /**
-     * Lấy token từ localStorage
-     */
-    getToken: () => {
-        return localStorage.getItem('admin_token');
+    // LẤY TOKEN
+    getToken: () => localStorage.getItem('admin_token'),
+    getCurrentUser: () => {
+        const user = localStorage.getItem('user');
+        return user ? JSON.parse(user) : null;
     },
 
-    /**
-     * Xóa token (Đăng xuất)
-     */
+    // ĐĂNG XUẤT
     logout: () => {
         localStorage.removeItem('admin_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('session_token');
     }
 };
 

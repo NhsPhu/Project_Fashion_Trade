@@ -1,6 +1,6 @@
 package com.example.fashion.controller;
 
-import com.example.fashion.dto.CheckoutRequest;
+import com.example.fashion.dto.CheckoutRequestDTO; // SỬA: DÙNG DTO ĐÚNG
 import com.example.fashion.entity.Order;
 import com.example.fashion.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -8,25 +8,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/orders") // Tiền tố chung cho khách hàng
+@RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // <-- THÊM DÒNG NÀY: Cho phép React gọi API
+@CrossOrigin(origins = "*")
 public class OrderController {
 
-    private final OrderService orderService; // Sẽ được tiêm (inject) ở bước sau
+    private final OrderService orderService;
 
-    /**
-     * API này dành cho khách hàng thực hiện thanh toán
-     * (Khớp với SecurityConfig: .requestMatchers("/api/v1/orders/checkout").permitAll())
-     */
     @PostMapping("/checkout")
-    public ResponseEntity<?> createOrder(@RequestBody CheckoutRequest request) {
+    public ResponseEntity<?> createOrder(@RequestBody CheckoutRequestDTO request) {
         try {
-            // Chúng ta sẽ viết hàm 'createOrder' trong OrderService ở bước tiếp theo
-            Order newOrder = orderService.createOrder(request);
-            return ResponseEntity.ok(newOrder); // Trả về thông tin đơn hàng đã tạo
+            Order newOrder = orderService.createOrder(request); // ĐÃ ĐÚNG
+            return ResponseEntity.ok(newOrder);
         } catch (RuntimeException e) {
-            // Trả về lỗi nếu có (ví dụ: hết hàng)
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

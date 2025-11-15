@@ -171,3 +171,168 @@ INSERT IGNORE INTO coupon
 VALUES 
 (1, 'SALE10', 'PERCENT', 10.00, 500000.00, '2025-11-01 00:00:00', '2025-12-31 23:59:59', 100, 0, true),
 (2, 'FREESHIP', 'FREE_SHIPPING', 0.00, 300000.00, '2025-11-01 00:00:00', '2025-12-31 23:59:59', 50, 0, true);
+
+-- ==========================================================
+-- BỔ SUNG CHỨC NĂNG ADMIN (KHÔNG CHỈNH SỬA PHẦN CŨ)
+-- ==========================================================
+
+-- 1. Thêm cột 2FA vào bảng users (chỉ thêm nếu chưa tồn tại)
+SET @column_exists = (
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'users' 
+      AND COLUMN_NAME = 'two_factor_secret'
+);
+
+SET @sql = IF(@column_exists = 0, 
+    'ALTER TABLE users ADD COLUMN two_factor_secret VARCHAR(255) NULL', 
+    'SELECT ''Column two_factor_secret already exists'' AS message'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @column_exists = (
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'users' 
+      AND COLUMN_NAME = 'two_factor_enabled'
+);
+
+SET @sql = IF(@column_exists = 0, 
+    'ALTER TABLE users ADD COLUMN two_factor_enabled BOOLEAN DEFAULT FALSE', 
+    'SELECT ''Column two_factor_enabled already exists'' AS message'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 2. Tạo bảng user_permissions (an toàn)
+CREATE TABLE IF NOT EXISTS user_permissions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    permission VARCHAR(100) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY uniq_user_permission (user_id, permission)
+);
+
+-- 3. Trang tĩnh CMS
+CREATE TABLE IF NOT EXISTS static_pages (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    title VARCHAR(255),
+    content TEXT,
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    meta_keywords TEXT,
+    og_image VARCHAR(255),
+    published BOOLEAN DEFAULT FALSE,
+    updated_by BIGINT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (updated_by) REFERENCES users(id)
+);
+
+-- 4. Banner / Slider
+CREATE TABLE IF NOT EXISTS banners (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    image_url VARCHAR(255),
+    link VARCHAR(255),
+    position INT DEFAULT 0,
+    active BOOLEAN DEFAULT TRUE,
+    start_date DATETIME,
+    end_date DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 5. Blog / News
+CREATE TABLE IF NOT EXISTS blog_posts (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    slug VARCHAR(255) UNIQUE,
+    excerpt TEXT,
+    content TEXT,
+    meta_title VARCHAR(255),
+    meta_description TEXT,
+    author_id BIGINT,
+    published BOOLEAN DEFAULT FALSE,
+    published_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES users(id)
+);
+
+-- 6. Mở rộng bảng reviews (thêm cột nếu chưa có)
+SET @column_exists = (
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'reviews' 
+      AND COLUMN_NAME = 'approved'
+);
+
+SET @sql = IF(@column_exists = 0, 
+    'ALTER TABLE reviews 
+     ADD COLUMN approved BOOLEAN DEFAULT FALSE,
+     ADD COLUMN hidden BOOLEAN DEFAULT FALSE,
+     ADD COLUMN admin_reply TEXT,
+     ADD COLUMN reviewed_by BIGINT,
+     ADD COLUMN reviewed_at DATETIME,
+     ADD FOREIGN KEY (reviewed_by) REFERENCES users(id)', 
+    'SELECT ''Review columns already exist'' AS message'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 7. Báo cáo abuse
+CREATE TABLE IF NOT EXISTS abuse_reports (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id BIGINT NOT NULL,
+    reason TEXT,
+    reporter_email VARCHAR(255),
+    resolved BOOLEAN DEFAULT FALSE,
+    resolved_by BIGINT,
+    resolved_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (resolved_by) REFERENCES users(id)
+);
+
+-- 8. Cấu hình hệ thống
+CREATE TABLE IF NOT EXISTS system_configs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    config_key VARCHAR(100) UNIQUE NOT NULL,
+    config_value TEXT,
+    description TEXT,
+    updated_by BIGINT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (updated_by) REFERENCES users(id)
+);
+
+-- 9. Audit logs
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT,
+    action VARCHAR(100),
+    entity_type VARCHAR(50),
+    entity_id BIGINT,
+    details TEXT,
+    ip_address VARCHAR(45),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- 10. Bổ sung quyền mẫu cho Super Admin (nếu chưa có)
+INSERT IGNORE INTO user_permissions (user_id, permission) 
+SELECT 1, 'CMS_PAGE_WRITE' WHERE NOT EXISTS (
+    SELECT 1 FROM user_permissions WHERE user_id = 1 AND permission = 'CMS_PAGE_WRITE'
+);
+
+INSERT IGNORE INTO user_permissions (user_id, permission) 
+SELECT 1, 'REVIEW_APPROVE' WHERE NOT EXISTS (
+    SELECT 1 FROM user_permissions WHERE user_id = 1 AND permission = 'REVIEW_APPROVE'
+);

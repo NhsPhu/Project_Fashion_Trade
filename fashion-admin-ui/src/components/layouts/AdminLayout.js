@@ -12,7 +12,7 @@ import {
     MenuUnfoldOutlined,
     StockOutlined,
     PercentageOutlined,
-    BarChartOutlined,
+    BarChartOutlined, SettingOutlined, MessageOutlined, FileTextOutlined,
 } from '@ant-design/icons';
 import { Layout, Menu, Button, theme, Space, Avatar, Badge } from 'antd';
 
@@ -27,7 +27,10 @@ const menuItems = [
     { key: '/admin/brands', icon: <TagsOutlined />, label: 'Thương hiệu' },
     { key: '/admin/inventory', icon: <StockOutlined />, label: 'Tồn kho' },
     { key: '/admin/coupons', icon: <PercentageOutlined />, label: 'Mã giảm giá' },     // MỚI
-    { key: '/admin/reports', icon: <BarChartOutlined />, label: 'Báo cáo' },         // MỚI
+    { key: '/admin/reports', icon: <BarChartOutlined />, label: 'Báo cáo' },
+    { key: '/admin/config', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
+    { key: '/admin/reviews', icon: <MessageOutlined />, label: 'Quản lý đánh giá' },
+    { key: '/admin/cms', icon: <FileTextOutlined />, label: 'CMS' },
 ];
 
 function AdminLayout() {

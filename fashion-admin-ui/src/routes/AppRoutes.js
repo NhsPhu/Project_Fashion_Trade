@@ -42,6 +42,15 @@ import CouponFormPage from '../pages/coupon/CouponFormPage';
 // Reports
 import ReportDashboard from '../pages/report/ReportDashboard';
 
+// === CẤU HÌNH HỆ THỐNG ===
+import SystemConfigPage from '../pages/config/SystemConfigPage';
+
+// === QUẢN LÝ ĐÁNH GIÁ & PHẢN HỒI ===
+import ReviewManagementPage from '../pages/reviews/ReviewManagementPage';
+
+// === QUẢN LÝ NỘI DUNG (CMS) ===
+import CmsPage from '../pages/cms/CmsPage';
+
 function AppRoutes() {
     const { isAuthenticated } = useAuth();
 
@@ -105,6 +114,16 @@ function AppRoutes() {
 
                     {/* Báo cáo */}
                     <Route path="reports" element={<ReportDashboard />} />
+
+                    {/* Cấu hình hệ thống */}
+                    <Route path="config" element={<SystemConfigPage />} />
+
+                    {/* Quản lý đánh giá */}
+                    <Route path="reviews" element={<ReviewManagementPage />} />
+
+                    {/* CMS */}
+                    <Route path="cms" element={<CmsPage />} />
+
                 </Route>
             </Route>
 

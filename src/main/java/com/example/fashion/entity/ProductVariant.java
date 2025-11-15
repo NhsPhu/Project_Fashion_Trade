@@ -1,4 +1,3 @@
-// src/main/java/com/example/fashion/entity/ProductVariant.java
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
@@ -10,8 +9,7 @@ import java.math.BigDecimal;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ProductVariant {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -31,9 +29,9 @@ public class ProductVariant {
     private BigDecimal salePrice;
 
     @Column(name = "stock_quantity", nullable = false)
-    private Integer stockQuantity;
+    @Builder.Default
+    private Integer stockQuantity = 0;
 
-    // XÓA scale → DOUBLE KHÔNG CẦN scale
     @Column(name = "weight")
     private Double weight;
 }

@@ -45,4 +45,18 @@ public class Review {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
+    @Column(name = "approved")
+    private boolean approved = false;
+
+    @Column(name = "hidden")
+    private boolean hidden = false;
+
+    @Column(name = "admin_reply")
+    private String adminReply;
+
+    @Column(name = "reviewed_by")
+    private Long reviewedBy;
+
+    @Column(name = "reviewed_at")
+    private LocalDateTime reviewedAt;
 }

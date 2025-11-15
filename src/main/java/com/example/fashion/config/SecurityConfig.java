@@ -1,15 +1,14 @@
 package com.example.fashion.config;
 
 import com.example.fashion.security.JwtAuthenticationFilter;
-import com.example.fashion.service.CustomUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.fashion.service.CustomUserDetailsService; // ← SỬA IMPORT TỪ SERVICE
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,14 +16,15 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired
-    private CustomUserDetailsService customUserDetailsService;
+    private final CustomUserDetailsService userDetailsService;
+    private final JwtAuthenticationFilter jwtFilter;
 
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    public SecurityConfig(CustomUserDetailsService userDetailsService, JwtAuthenticationFilter jwtFilter) {
+        this.userDetailsService = userDetailsService;
+        this.jwtFilter = jwtFilter;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -32,9 +32,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
     @Bean
@@ -43,43 +42,25 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configure(http))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // PHÂN QUYỀN
                 .authorizeHttpRequests(auth -> auth
-
-                        // 1. Cho phép tất cả OPTIONS (CORS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // 2. Auth công khai (đăng nhập, đăng ký...)
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/admin/auth/login").permitAll()
 
-                        // ==========================================================
-                        // ===== DÒNG MỚI ĐÃ THÊM CHO CHỨC NĂNG THANH TOÁN =====
-                        .requestMatchers(HttpMethod.POST, "/api/v1/orders/checkout").permitAll()
-                        // ==========================================================
-
-                        // 3. SIÊU QUAN TRỌNG: CHO PHÉP SUPER_ADMIN + MANAGER TRUY CẬP TẤT CẢ /admin/**
+                        // ADMIN ENDPOINTS
                         .requestMatchers("/api/v1/admin/**")
-                        .hasAnyAuthority("SUPER_ADMIN", "PRODUCT_MANAGER", "ORDER_MANAGER")
+                        .hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_PRODUCT_MANAGER", "ROLE_ORDER_MANAGER")
 
-                        // 4. Các rule cụ thể (không bị chặn)
-                        .requestMatchers("/api/v1/admin/products/**")
-                        .hasAnyAuthority("PRODUCT_MANAGER", "SUPER_ADMIN")
-                        .requestMatchers("/api/v1/admin/categories/**")
-                        .hasAnyAuthority("PRODUCT_MANAGER", "SUPER_ADMIN")
-                        .requestMatchers("/api/v1/admin/brands/**")
-                        .hasAnyAuthority("PRODUCT_MANAGER", "SUPER_ADMIN")
-                        .requestMatchers("/api/v1/admin/orders/**")
-                        .hasAnyAuthority("ORDER_MANAGER", "SUPER_ADMIN")
-                        .requestMatchers("/api/v1/admin/users/**")
-                        .hasAuthority("SUPER_ADMIN")
+                        .requestMatchers("/api/v1/admin/cms/**")
+                        .hasAuthority("CMS_PAGE_WRITE")
 
-                        // 5. Tất cả request khác cần đăng nhập
+                        .requestMatchers("/api/v1/admin/reviews/**")
+                        .hasAuthority("REVIEW_APPROVE")
+
                         .anyRequest().authenticated()
                 )
-
-                .userDetailsService(customUserDetailsService)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .userDetailsService(userDetailsService)
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
