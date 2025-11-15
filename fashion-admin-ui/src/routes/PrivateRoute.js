@@ -12,16 +12,16 @@ function PrivateRoute() {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // 2. CHỈ BẢO VỆ CÁC TRANG NHẠY CẢM (ví dụ: quản lý user)
+    // 2. CHỈ BẢO VỆ CÁC TRANG SIÊU NHẠY CẢM
     const restrictedRoutes = {
-        '/admin/users': ['SUPER_ADMIN'],
-        '/admin/users/edit/:id': ['SUPER_ADMIN'],
-        // '/admin/config': ['SUPER_ADMIN'],  ← ĐÃ XÓA DÒNG NÀY
+        // Ví dụ: chỉ SUPER_ADMIN mới được vào
+        // '/admin/users': ['SUPER_ADMIN'],
+        // '/admin/users/edit/:id': ['SUPER_ADMIN'],
     };
 
     const currentPath = location.pathname;
 
-    // Tìm route có tham số động (ví dụ: /admin/users/edit/123)
+    // Tìm route có tham số động
     const restrictedPath = Object.keys(restrictedRoutes).find(route => {
         const regex = new RegExp('^' + route.replace(/:\w+/g, '[^/]+') + '$');
         return regex.test(currentPath);
@@ -35,7 +35,7 @@ function PrivateRoute() {
         }
     }
 
-    // 3. TẤT CẢ CÁC TRANG KHÁC (config, reviews, cms...) → CHO QUA
+    // 3. TẤT CẢ CÁC TRANG KHÁC → CHO QUA
     return <Outlet />;
 }
 
