@@ -1,23 +1,28 @@
 // src/services/ApiService.js
 import axios from 'axios';
 
-// 1. Tạo instance Axios TRUNG TÂM
-const api = axios.create({
-    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1', // SỬA LỖI: Đảm bảo có /api/v1
-    headers: {
-        'Content-Type': 'application/json',
-    },
+// 1. BASE URL CHUNG
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api/v1';
+
+// 2. CLIENT CÔNG KHAI: KHÔNG GỬI TOKEN
+export const publicApi = axios.create({
+    baseURL: BASE_URL,
+    headers: { 'Content-Type': 'application/json' },
 });
 
-// 2. Interceptor: tự động thêm token
-api.interceptors.request.use((config) => {
-    // Lấy token từ localStorage (Dùng key HỢP NHẤT)
+// 3. CLIENT CHUNG: GỬI TOKEN NẾU KHÔNG PHẢI PUBLIC ROUTE
+const api = axios.create({
+    baseURL: BASE_URL,
+    headers: { 'Content-Type': 'application/json' },
+});
+
+api.interceptors.request.use(config => {
     const token = localStorage.getItem('app_token');
-    if (token) {
+    // ĐÃ SỬA: KHÔNG GỬI TOKEN CHO /public/*
+    if (token && !config.url.startsWith('/public/')) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
 });
 
-// 3. Export trực tiếp instance
 export default api;

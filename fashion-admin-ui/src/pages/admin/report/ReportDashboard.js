@@ -61,6 +61,18 @@ const ReportDashboard = () => {
         fetchData();
     }, [fetchData]);
 
+    // ⭐⭐⭐ Thêm hàm Export Excel ⭐⭐⭐
+    const handleExportExcel = async () => {
+        const [start, end] = dateRange;
+
+        try {
+            // type = "full" hoặc tùy API backend
+            await ReportService.exportExcel("full", start, end);
+        } catch (error) {
+            console.error("Xuất Excel thất bại:", error);
+        }
+    };
+
     const columnsTop = [
         { title: 'Sản phẩm', dataIndex: 'productName', key: 'productName' },
         { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
@@ -87,8 +99,12 @@ const ReportDashboard = () => {
                     <Col>
                         <Button type="primary" onClick={fetchData}>Tải báo cáo</Button>
                     </Col>
+
+                    {/* ⭐⭐⭐ Gắn onClick cho Xuất Excel ⭐⭐⭐ */}
                     <Col flex="auto" style={{ textAlign: 'right' }}>
-                        <Button icon={<DownloadOutlined />}>Xuất Excel</Button>
+                        <Button icon={<DownloadOutlined />} onClick={handleExportExcel}>
+                            Xuất Excel
+                        </Button>
                     </Col>
                 </Row>
 
