@@ -1,8 +1,8 @@
 import React from 'react';
 
-// (Đảm bảo các đường dẫn Context này là chính xác!)
-import { AuthProvider as AdminAuthProvider } from './contexts/AuthContext';
-import { UserAuthProvider } from './contexts/UserAuthContext';
+// 1. SỬA: Chỉ import 1 AuthProvider HỢP NHẤT
+import { AuthProvider } from './contexts/AuthContext';
+// 2. XÓA: UserAuthProvider
 import { UserCartProvider } from './contexts/UserCartContext';
 
 import AppRoutes from './routes/AppRoutes'; // Import bộ định tuyến Gốc
@@ -11,17 +11,12 @@ import './index.css';
 
 function App() {
     return (
-        // Bọc Context của Admin
-        <AdminAuthProvider>
-            {/* Bọc Context của User (Khách hàng) */}
-            <UserAuthProvider>
-                <UserCartProvider>
-                    {/* AppRoutes (bộ định tuyến) phải nằm BÊN TRONG
-                        tất cả các Provider mà nó sử dụng */}
-                    <AppRoutes />
-                </UserCartProvider>
-            </UserAuthProvider>
-        </AdminAuthProvider>
+        // 3. SỬA: Chỉ dùng AuthProvider HỢP NHẤT
+        <AuthProvider>
+            <UserCartProvider>
+                <AppRoutes />
+            </UserCartProvider>
+        </AuthProvider>
     );
 }
 

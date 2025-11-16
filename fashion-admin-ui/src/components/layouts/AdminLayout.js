@@ -1,110 +1,101 @@
-// src/layouts/AdminLayout.js
-import React, { useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+// src/components/layouts/AdminLayout.js
+import React from 'react';
+import { Layout, Menu, Avatar, Dropdown, Space, Button } from 'antd';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     DashboardOutlined,
     ShoppingCartOutlined,
     UserOutlined,
-    TagsOutlined,
+    ShoppingOutlined,
     AppstoreOutlined,
-    MenuFoldOutlined,
-    MenuUnfoldOutlined,
-    StockOutlined,
-    PercentageOutlined,
-    BarChartOutlined, SettingOutlined, MessageOutlined, FileTextOutlined,
+    GiftOutlined,
+    LogoutOutlined,
+    BarChartOutlined,
+    SettingOutlined,
+    TeamOutlined,
+    HomeOutlined
 } from '@ant-design/icons';
-import { Layout, Menu, Button, theme, Space, Avatar, Badge } from 'antd';
 
-const { Header, Sider, Content } = Layout;
+// (Đã sửa ở lượt trước)
+import { useAuth } from '../../contexts/AuthContext';
 
+const { Header, Content, Sider } = Layout;
+
+// (Menu items - giữ nguyên)
 const menuItems = [
-    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-    { key: '/admin/products', icon: <ShoppingCartOutlined />, label: 'Sản phẩm' },
-    { key: '/admin/orders', icon: <AppstoreOutlined />, label: 'Đơn hàng' },
-    { key: '/admin/users', icon: <UserOutlined />, label: 'Người dùng' },
-    { key: '/admin/categories', icon: <TagsOutlined />, label: 'Danh mục' },
-    { key: '/admin/brands', icon: <TagsOutlined />, label: 'Thương hiệu' },
-    { key: '/admin/inventory', icon: <StockOutlined />, label: 'Tồn kho' },
-    { key: '/admin/coupons', icon: <PercentageOutlined />, label: 'Mã giảm giá' },     // MỚI
-    { key: '/admin/reports', icon: <BarChartOutlined />, label: 'Báo cáo' },
-    { key: '/admin/config', icon: <SettingOutlined />, label: 'Cấu hình hệ thống' },
-    { key: '/admin/reviews', icon: <MessageOutlined />, label: 'Quản lý đánh giá' },
-    { key: '/admin/cms', icon: <FileTextOutlined />, label: 'CMS' },
+    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: <Link to="/admin/dashboard">Tổng quan</Link> },
+    { key: '/admin/orders', icon: <ShoppingCartOutlined />, label: <Link to="/admin/orders">Đơn hàng</Link> },
+    {
+        key: 'products_group',
+        icon: <ShoppingOutlined />,
+        label: 'Sản phẩm',
+        children: [
+            { key: '/admin/products', label: <Link to="/admin/products">Tất cả sản phẩm</Link> },
+            { key: '/admin/products/new', label: <Link to="/admin/products/new">Thêm sản phẩm mới</Link> },
+            { key: '/admin/categories', label: <Link to="/admin/categories">Danh mục</Link> },
+            { key: '/admin/brands', label: <Link to="/admin/brands">Thương hiệu</Link> },
+        ]
+    },
+    { key: '/admin/users', icon: <TeamOutlined />, label: <Link to="/admin/users">Người dùng</Link> },
+    { key: '/admin/inventory', icon: <AppstoreOutlined />, label: <Link to="/admin/inventory">Tồn kho</Link> },
+    { key: '/admin/coupons', icon: <GiftOutlined />, label: <Link to="/admin/coupons">Mã giảm giá</Link> },
+    { key: '/admin/reports', icon: <BarChartOutlined />, label: <Link to="/admin/reports">Báo cáo</Link> },
+    { key: '/admin/config', icon: <SettingOutlined />, label: <Link to="/admin/config">Cài đặt</Link> },
 ];
 
-function AdminLayout() {
-    const [collapsed, setCollapsed] = useState(false);
-    const { logout } = useAuth();
+const AdminLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
-    const handleMenuClick = (e) => navigate(e.key);
+    const { user, logout } = useAuth();
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login'); // Điều hướng về trang login CHUNG
+    };
+
+    // 1. SỬA LỖI Ant Design: 'menu' phải là một object chứa 'items'
+    const userMenu = {
+        items: [
+            { key: '1', label: 'Hồ sơ (Chưa có)', icon: <UserOutlined /> },
+            { key: '2', label: <Link to="/">Xem trang chủ</Link>, icon: <HomeOutlined /> },
+            { type: 'divider' },
+            { key: '3', label: 'Đăng xuất', icon: <LogoutOutlined />, onClick: handleLogout },
+        ]
+    };
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
-            <Sider trigger={null} collapsible collapsed={collapsed} width={250}>
-                <div style={{
-                    height: 64,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    margin: 16,
-                    borderRadius: 8
-                }}>
-                    <h2 style={{ color: 'white', margin: 0, fontWeight: 600 }}>
-                        {collapsed ? 'F.A' : 'Fashion Admin'}
-                    </h2>
+            <Sider collapsible width={200}>
+                <div style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)', color: 'white', textAlign: 'center', lineHeight: '32px', borderRadius: 4 }}>
+                    ADMIN
                 </div>
                 <Menu
                     theme="dark"
                     mode="inline"
-                    selectedKeys={[location.pathname]}
                     items={menuItems}
-                    onClick={handleMenuClick}
+                    defaultSelectedKeys={['/admin/dashboard']}
+                    selectedKeys={[location.pathname]}
                 />
             </Sider>
-
             <Layout>
-                <Header style={{
-                    padding: '0 24px',
-                    background: colorBgContainer,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    boxShadow: '0 1px 4px rgba(0,21,41,.08)'
-                }}>
-                    <Button
-                        type="text"
-                        icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                        onClick={() => setCollapsed(!collapsed)}
-                        style={{ fontSize: 18, width: 64, height: 64 }}
-                    />
-                    <Space>
-                        <Badge count={3} size="small">
-                            <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
-                        </Badge>
-                        <Button type="primary" danger onClick={logout}>
-                            Đăng xuất
+                <Header style={{ padding: '0 16px', background: '#fff', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    {/* 2. SỬA LỖI Ant Design: Dùng 'menu' thay vì 'overlay' */}
+                    <Dropdown menu={userMenu} trigger={['click']}>
+                        <Button type="text">
+                            <Space>
+                                <Avatar icon={<UserOutlined />} size="small" />
+                                {user?.fullName || user?.email}
+                            </Space>
                         </Button>
-                    </Space>
+                    </Dropdown>
                 </Header>
-
-                <Content style={{
-                    margin: '24px 16px',
-                    padding: 24,
-                    minHeight: 280,
-                    background: colorBgContainer,
-                    borderRadius: borderRadiusLG,
-                    boxShadow: '0 1px 4px rgba(0,21,41,.08)'
-                }}>
+                <Content style={{ margin: '16px', padding: 24, background: '#fff' }}>
                     <Outlet />
                 </Content>
             </Layout>
         </Layout>
     );
-}
+};
 
 export default AdminLayout;

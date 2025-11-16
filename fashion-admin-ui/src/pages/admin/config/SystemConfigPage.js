@@ -1,7 +1,7 @@
 // src/pages/config/SystemConfigPage.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { Form, Input, Button, Tabs, Switch, message, Table, Tag } from 'antd';
-import ApiService from '../../../services/admin/ApiService';
+import ApiService from '../../../services/ApiService';
 
 const { TabPane } = Tabs;
 

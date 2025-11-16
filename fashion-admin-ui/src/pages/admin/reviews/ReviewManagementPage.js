@@ -1,7 +1,7 @@
 // src/pages/reviews/ReviewManagementPage.js
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, message, Tag } from 'antd';
-import ApiService from '../../../services/admin/ApiService';
+import ApiService from '../../../services/ApiService';
 
 function ReviewManagementPage() {
     const [reviews, setReviews] = useState([]);

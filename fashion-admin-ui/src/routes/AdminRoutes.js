@@ -1,13 +1,13 @@
+// src/routes/AdminRoutes.js
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext'; // (Đã sửa ở lượt trước)
 
 // Layout
 import AdminLayout from '../components/layouts/AdminLayout'; // (Đảm bảo đường dẫn này đúng)
 
 // Auth Pages (Các trang này CHỈ dành cho Admin)
 import LoginPage from '../pages/LoginPage'; // (Trang đăng nhập Admin dùng chung)
-// --- ĐÃ XÓA RegisterPage khỏi đây ---
 
 // Dashboard
 import DashboardPage from '../pages/DashboardPage';
@@ -41,7 +41,7 @@ import CmsPage from '../pages/admin/cms/CmsPage';
 
 
 function AdminRoutes() {
-    const { isAuthenticated } = useAuth(); // (Sử dụng Context của Admin)
+    const { isAuthenticated, userType } = useAuth(); // (Sử dụng Context của Admin)
 
     return (
         <Routes>
@@ -59,6 +59,13 @@ function AdminRoutes() {
 
                     <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<DashboardPage />} />
+
+                    {/* // ===================================
+                    // SỬA LỖI: THÊM 2 DÒNG BỊ THIẾU Ở ĐÂY
+                    // ===================================
+                    */}
+                    <Route path="orders" element={<OrderListPage />} />
+                    <Route path="orders/:id" element={<OrderDetailPage />} />
 
                     {/* (Tất cả các tuyến đường CRUD của Admin giữ nguyên) */}
                     <Route path="products" element={<ProductListPage />} />

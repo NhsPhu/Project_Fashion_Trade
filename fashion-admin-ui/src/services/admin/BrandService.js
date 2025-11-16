@@ -1,4 +1,5 @@
-import axios from 'axios';
+// src/services/admin/BrandService.js
+import api from '../ApiService'; // 1. SỬA LỖI: Import instance TRUNG TÂM (chú ý ../)
 
 /**
  * Dịch vụ xử lý API liên quan đến Quản lý Thương hiệu (Brand)
@@ -10,7 +11,8 @@ const BrandService = {
      */
     getAllBrands: async () => {
         try {
-            const response = await axios.get('/api/v1/admin/brands');
+            // 2. SỬA LỖI: Dùng 'api' và xóa '/api/v1'
+            const response = await api.get('/admin/brands');
             return response.data;
         } catch (error) {
             console.error('Lỗi khi lấy danh sách thương hiệu:', error.response?.data || error.message);
@@ -20,11 +22,11 @@ const BrandService = {
 
     /**
      * MỚI: Lấy chi tiết một thương hiệu
-     * (Giả định bạn đã thêm API GET /api/v1/admin/brands/{id} vào backend)
      */
     getBrandById: async (id) => {
         try {
-            const response = await axios.get(`/api/v1/admin/brands/${id}`);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.get(`/admin/brands/${id}`);
             return response.data;
         } catch (error) {
             console.error(`Lỗi khi lấy thương hiệu ${id}:`, error.response?.data || error.message);
@@ -37,7 +39,8 @@ const BrandService = {
      */
     createBrand: async (brandData) => {
         try {
-            const response = await axios.post('/api/v1/admin/brands', brandData);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.post('/admin/brands', brandData);
             return response.data;
         } catch (error) {
             console.error('Lỗi khi tạo thương hiệu:', error.response?.data || error.message);
@@ -50,7 +53,8 @@ const BrandService = {
      */
     updateBrand: async (id, brandData) => {
         try {
-            const response = await axios.put(`/api/v1/admin/brands/${id}`, brandData);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.put(`/admin/brands/${id}`, brandData);
             return response.data;
         } catch (error) {
             console.error(`Lỗi khi cập nhật thương hiệu ${id}:`, error.response?.data || error.message);
@@ -63,7 +67,8 @@ const BrandService = {
      */
     deleteBrand: async (id) => {
         try {
-            await axios.delete(`/api/v1/admin/brands/${id}`);
+            // 2. SỬA LỖI: Dùng 'api'
+            await api.delete(`/admin/brands/${id}`);
         } catch (error) {
             console.error(`Lỗi khi xóa thương hiệu ${id}:`, error.response?.data || error.message);
             throw new Error(error.response?.data?.message || 'Xóa thương hiệu thất bại');

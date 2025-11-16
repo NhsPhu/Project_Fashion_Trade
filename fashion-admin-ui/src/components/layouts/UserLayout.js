@@ -1,3 +1,4 @@
+// src/components/layouts/UserLayout.js
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Layout, Menu, Badge, Space, Avatar, Button, Dropdown } from 'antd';
@@ -5,7 +6,8 @@ import { ShoppingCartOutlined, HeartOutlined, UserOutlined, LogoutOutlined, Apps
 
 // (Đảm bảo các đường dẫn Context này là chính xác)
 import { useUserCart } from '../../contexts/UserCartContext';
-import { useUserAuth } from '../../contexts/UserAuthContext';
+// 1. SỬA LỖI: Import hook 'useAuth' HỢP NHẤT
+import { useAuth } from '../../contexts/AuthContext';
 
 import './UserLayout.css'; // (Tệp CSS mới)
 
@@ -26,7 +28,8 @@ const UserLayout = () => {
 
     // Lấy context an toàn (Fix lỗi crash loop)
     const cartContext = useUserCart();
-    const authContext = useUserAuth();
+    // 2. SỬA LỖI: Dùng hook 'useAuth' HỢP NHẤT
+    const authContext = useAuth();
 
     const cart = cartContext ? cartContext.cart : null;
     const isAuthenticated = authContext ? authContext.isAuthenticated : false;
@@ -40,10 +43,11 @@ const UserLayout = () => {
         navigate('/login');
     };
 
-    // Kiểm tra xem user có phải là Admin/Manager không
+    // 3. SỬA LỖI: Kiểm tra vai trò từ 'user' HỢP NHẤT
+    // (userType cũng có thể dùng nếu bạn đã sửa AuthContext)
     const isAdmin = user?.roles?.some(role =>
         role === 'SUPER_ADMIN' ||
-        role === 'PRODUCT_MANAGER' ||
+        role ==='PRODUCT_MANAGER' ||
         role === 'ORDER_MANAGER'
     );
 

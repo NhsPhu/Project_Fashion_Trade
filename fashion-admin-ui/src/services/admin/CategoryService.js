@@ -1,4 +1,5 @@
-import axios from 'axios';
+// src/services/admin/CategoryService.js
+import api from '../ApiService'; // 1. SỬA LỖI: Import instance TRUNG TÂM (chú ý ../)
 
 /**
  * Dịch vụ xử lý API liên quan đến Quản lý Danh mục (Category)
@@ -10,7 +11,8 @@ const CategoryService = {
      */
     getAllCategories: async () => {
         try {
-            const response = await axios.get('/api/v1/admin/categories');
+            // 2. SỬA LỖI: Dùng 'api' và xóa '/api/v1'
+            const response = await api.get('/admin/categories');
             return response.data;
         } catch (error) {
             console.error('Lỗi khi lấy danh sách danh mục:', error.response?.data || error.message);
@@ -23,7 +25,8 @@ const CategoryService = {
      */
     getCategoryById: async (id) => {
         try {
-            const response = await axios.get(`/api/v1/admin/categories/${id}`);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.get(`/admin/categories/${id}`);
             return response.data;
         } catch (error) {
             console.error(`Lỗi khi lấy danh mục ${id}:`, error.response?.data || error.message);
@@ -36,7 +39,8 @@ const CategoryService = {
      */
     createCategory: async (categoryData) => {
         try {
-            const response = await axios.post('/api/v1/admin/categories', categoryData);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.post('/admin/categories', categoryData);
             return response.data;
         } catch (error) {
             console.error('Lỗi khi tạo danh mục:', error.response?.data || error.message);
@@ -49,7 +53,8 @@ const CategoryService = {
      */
     updateCategory: async (id, categoryData) => {
         try {
-            const response = await axios.put(`/api/v1/admin/categories/${id}`, categoryData);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.put(`/admin/categories/${id}`, categoryData);
             return response.data;
         } catch (error) {
             console.error(`Lỗi khi cập nhật danh mục ${id}:`, error.response?.data || error.message);
@@ -62,13 +67,12 @@ const CategoryService = {
      */
     deleteCategory: async (id) => {
         try {
-            await axios.delete(`/api/v1/admin/categories/${id}`);
-        // ========== ĐÃ SỬA LỖI ==========
-        } catch (error) { // <-- Thêm {
+            // 2. SỬA LỖI: Dùng 'api'
+            await api.delete(`/admin/categories/${id}`);
+        } catch (error) {
             console.error(`Lỗi khi xóa danh mục ${id}:`, error.response?.data || error.message);
             throw new Error(error.response?.data?.message || 'Xóa danh mục thất bại');
-        } // <-- Thêm }
-        // =================================
+        }
     }
 };
 

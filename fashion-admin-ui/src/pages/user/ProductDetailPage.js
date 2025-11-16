@@ -1,10 +1,12 @@
+// src/pages/user/ProductDetailPage.js
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, Row, Col, Image, Typography, Space, Select, InputNumber, Button, Tabs, message, Alert, Spin } from 'antd';
 import ProductCatalogService from '../../services/user/ProductCatalogService';
 import WishlistService from '../../services/user/WishlistService';
 import { useUserCart } from '../../contexts/UserCartContext';
-import { useUserAuth } from '../../contexts/UserAuthContext';
+// 1. SỬA LỖI: Import hook 'useAuth' HỢP NHẤT
+import { useAuth } from '../../contexts/AuthContext';
 
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
@@ -17,7 +19,9 @@ const ProductDetailPage = () => {
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useUserCart();
-  const { isAuthenticated } = useUserAuth();
+
+  // 2. SỬA LỖI: Dùng hook 'useAuth' HỢP NHẤT
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const load = async () => {
@@ -127,6 +131,7 @@ const ProductDetailPage = () => {
               </div>
               <Space>
                 <Button type="primary" onClick={handleAddToCart}>Thêm vào giỏ</Button>
+                {/* 3. SỬA LỖI: 'isAuthenticated' được lấy từ hook hợp nhất */}
                 {isAuthenticated && <Button onClick={handleFavorite}>Yêu thích</Button>}
               </Space>
             </Space>

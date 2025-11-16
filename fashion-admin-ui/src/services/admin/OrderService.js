@@ -1,4 +1,5 @@
-import axios from 'axios';
+// src/services/admin/OrderService.js
+import api from '../ApiService'; // 1. SỬA LỖI: Import instance TRUNG TÂM (chú ý ../)
 
 /**
  * Dịch vụ xử lý API liên quan đến Quản lý Đơn hàng
@@ -18,7 +19,8 @@ const OrderService = {
                 sort: `${sortField},${sortDir}`
             };
 
-            const response = await axios.get('/api/v1/admin/orders', { params });
+            // 2. SỬA LỖI: Dùng 'api' (đã có baseURL) và bỏ '/api/v1'
+            const response = await api.get('/admin/orders', { params });
 
             return response.data;
         } catch (error) {
@@ -32,7 +34,8 @@ const OrderService = {
      */
     getOrderById: async (id) => {
         try {
-            const response = await axios.get(`/api/v1/admin/orders/${id}`);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.get(`/admin/orders/${id}`);
             return response.data;
         } catch (error) {
             console.error(`Lỗi khi lấy đơn hàng ${id}:`, error.response?.data || error.message);
@@ -45,14 +48,13 @@ const OrderService = {
      */
     updateOrderStatus: async (id, data) => {
         try {
-            const response = await axios.put(`/api/v1/admin/orders/${id}/status`, data);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.put(`/admin/orders/${id}/status`, data);
             return response.data;
-            // ========== ĐÃ SỬA LỖI ==========
-        } catch (error) { // <-- Thêm {
+        } catch (error) {
             console.error(`Lỗi khi cập nhật đơn hàng ${id}:`, error.response?.data || error.message);
             throw new Error(error.response?.data?.message || 'Cập nhật đơn hàng thất bại');
-        } // <-- Thêm }
-        // =================================
+        }
     }
 };
 

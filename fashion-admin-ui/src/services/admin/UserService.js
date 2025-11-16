@@ -1,7 +1,5 @@
-import axios from 'axios';
-
-// Chúng ta không cần định nghĩa API_BASE_URL nữa
-// vì chúng ta đã cấu hình axios global trong AuthContext.
+// src/services/admin/UserService.js
+import api from '../ApiService'; // 1. SỬA LỖI: Import instance TRUNG TÂM (chú ý ../)
 
 /**
  * Dịch vụ xử lý API liên quan đến Quản lý Người dùng
@@ -13,7 +11,8 @@ const UserService = {
      */
     getAllUsers: async () => {
         try {
-            const response = await axios.get('/api/v1/admin/users');
+            // 2. SỬA LỖI: Dùng 'api' và xóa '/api/v1'
+            const response = await api.get('/admin/users');
             return response.data;
         } catch (error) {
             console.error('Lỗi khi lấy danh sách người dùng:', error.response?.data || error.message);
@@ -27,19 +26,8 @@ const UserService = {
      */
     getUserById: async (userId) => {
         try {
-            // (Lưu ý: Backend của chúng ta chưa có API này,
-            // chúng ta sẽ dùng tạm 'getAllUsers' và lọc.
-            // Lý tưởng nhất là bạn nên thêm API GET /api/v1/admin/users/{id} vào backend)
-
-            // --- GIẢ LẬP TẠM THỜI ---
-            // const allUsers = await UserService.getAllUsers();
-            // const user = allUsers.find(u => u.id.toString() === userId.toString());
-            // if (user) return user;
-            // else throw new Error('Không tìm thấy người dùng');
-
-            // --- GIẢ ĐỊNH BẠN ĐÃ THÊM API NÀY Ở BACKEND ---
-            // Nếu bạn chưa thêm, API này sẽ báo lỗi 404
-            const response = await axios.get(`/api/v1/admin/users/${userId}`);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.get(`/admin/users/${userId}`);
             return response.data;
 
         } catch (error) {
@@ -54,7 +42,8 @@ const UserService = {
      */
     updateUserStatus: async (userId, status) => {
         try {
-            const response = await axios.put(`/api/v1/admin/users/${userId}/status`, {
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.put(`/admin/users/${userId}/status`, {
                 status: status
             });
             return response.data;
@@ -69,7 +58,8 @@ const UserService = {
      */
     updateUserRoles: async (userId, roles) => {
         try {
-            const response = await axios.put(`/api/v1/admin/users/${userId}/roles`, {
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.put(`/admin/users/${userId}/roles`, {
                 roles: roles
             });
             return response.data;

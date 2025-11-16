@@ -1,10 +1,11 @@
-// src/user/pages/ProfilePage.js
+// src/pages/user/ProfilePage.js
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { Card, Form, Input, Button, Row, Col, List, Switch, message, Typography, Space } from 'antd';
 import { LogoutOutlined } from '@ant-design/icons';
 import UserProfileService from '../../services/user/UserProfileService';
-import { useUserAuth } from '../../contexts/UserAuthContext';
+// 1. SỬA LỖI: Import hook 'useAuth' HỢP NHẤT
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
@@ -14,7 +15,8 @@ const ProfilePage = () => {
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const { logout } = useUserAuth();
+  // 2. SỬA LỖI: Lấy hàm logout từ hook HỢP NHẤT
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   // BỌC load TRONG useCallback
@@ -45,7 +47,8 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/user/login'); // ĐÚNG ĐƯỜNG DẪN
+    // 3. SỬA LỖI: Điều hướng về trang login CHUNG
+    navigate('/login');
   };
 
   return (

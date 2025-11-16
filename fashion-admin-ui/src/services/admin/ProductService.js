@@ -1,4 +1,5 @@
-import axios from 'axios';
+// src/services/admin/ProductService.js
+import api from '../ApiService'; // 1. SỬA LỖI: Import instance TRUNG TÂM (chú ý ../)
 
 /**
  * Dịch vụ xử lý API liên quan đến Quản lý Sản phẩm
@@ -16,7 +17,8 @@ const ProductService = {
                 size: size,
                 sort: `${sortField},${sortDir}`
             };
-            const response = await axios.get('/api/v1/admin/products', { params });
+            // 2. SỬA LỖI: Dùng 'api' và xóa '/api/v1'
+            const response = await api.get('/admin/products', { params });
             return response.data;
         } catch (error) {
             console.error('Lỗi khi lấy danh sách sản phẩm:', error.response?.data || error.message);
@@ -30,7 +32,8 @@ const ProductService = {
      */
     getProductById: async (id) => {
         try {
-            const response = await axios.get(`/api/v1/admin/products/${id}`);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.get(`/admin/products/${id}`);
             return response.data;
         } catch (error) {
             console.error(`Lỗi khi lấy sản phẩm ${id}:`, error.response?.data || error.message);
@@ -43,7 +46,8 @@ const ProductService = {
      */
     createProduct: async (productData) => {
         try {
-            const response = await axios.post('/api/v1/admin/products', productData);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.post('/admin/products', productData);
             return response.data;
         } catch (error) {
             console.error('Lỗi khi tạo sản phẩm:', error.response?.data || error.message);
@@ -58,7 +62,8 @@ const ProductService = {
      */
     updateProduct: async (id, productData) => {
         try {
-            const response = await axios.put(`/api/v1/admin/products/${id}`, productData);
+            // 2. SỬA LỖI: Dùng 'api'
+            const response = await api.put(`/admin/products/${id}`, productData);
             return response.data;
         } catch (error) {
             console.error(`Lỗi khi cập nhật sản phẩm ${id}:`, error.response?.data || error.message);
@@ -71,7 +76,8 @@ const ProductService = {
      */
     deleteProduct: async (id) => {
         try {
-            await axios.delete(`/api/v1/admin/products/${id}`);
+            // 2. SỬA LỖI: Dùng 'api'
+            await api.delete(`/admin/products/${id}`);
         } catch (error) {
             console.error(`Lỗi khi xóa sản phẩm ${id}:`, error.response?.data || error.message);
             throw new Error(error.response?.data?.message || 'Xóa sản phẩm thất bại');

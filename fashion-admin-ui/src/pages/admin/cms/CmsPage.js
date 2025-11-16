@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Table, Modal, Switch, message, Space } from 'antd';
 import { Editor } from '@tinymce/tinymce-react';
-import ApiService from '../../../services/admin/ApiService';
+import ApiService from '../../../services/ApiService';
 
 function CmsPage() {
     const [pages, setPages] = useState([]);

@@ -9,7 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize; // Đảm bảo import này
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -19,7 +19,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/reports")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('SUPER_ADMIN') OR hasRole('ADMIN')")
+// SỬA LỖI: Dùng các vai trò có thật (PRODUCT_MANAGER, ORDER_MANAGER) thay vì 'ADMIN'
+// Thêm hasAnyRole để khớp với SecurityConfig
+@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'PRODUCT_MANAGER', 'ORDER_MANAGER')")
 public class AdminReportController {
 
     private final ReportService reportService;

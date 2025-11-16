@@ -1,8 +1,8 @@
-// src/user/contexts/UserCartContext.js
-
+// src/contexts/UserCartContext.js
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import UserCartService from '../services/user/UserCartService';
-import { useUserAuth } from './UserAuthContext';
+// 1. SỬA LỖI: Import hook 'useAuth' HỢP NHẤT
+import { useAuth } from './AuthContext';
 import { SESSION_KEY } from '../services/user/httpClient';
 
 const CartContext = createContext();
@@ -29,10 +29,12 @@ export const UserCartProvider = ({ children }) => {
   const [sessionId, setSessionId] = useState(loadSessionId());
   const [isLoading, setIsLoading] = useState(false);
 
-  const { token } = useUserAuth();
+  // 2. SỬA LỖI: Lấy token từ hook 'useAuth' HỢP NHẤT
+  const { token } = useAuth();
 
   // BỌC getSessionId TRONG useCallback ĐỂ TRÁNH LỖI DEPENDENCY
   const getSessionId = useCallback(() => {
+    // 3. SỬA LỖI: Logic giữ nguyên, chỉ là tên biến token
     return token ? null : sessionId;
   }, [token, sessionId]);
 
