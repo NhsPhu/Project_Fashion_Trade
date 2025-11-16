@@ -1,6 +1,6 @@
 // src/hooks/useApi.js
 import { useState } from 'react';
-import ApiService from '../services/ApiService';
+import ApiService from '../services/admin/ApiService';
 
 export const useApi = () => {
     const [loading, setLoading] = useState(false);

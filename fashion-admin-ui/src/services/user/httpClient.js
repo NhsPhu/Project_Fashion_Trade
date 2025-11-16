@@ -29,21 +29,21 @@ userApiClient.interceptors.request.use(config => {
     return config;
 });
 
-// Xử lý lỗi 401/403 → Đăng xuất
-userApiClient.interceptors.response.use(
-    res => res,
-    err => {
-        const status = err?.response?.status;
-        if (status === 401 || status === 403) {
-            localStorage.removeItem(USER_TOKEN_KEY);
-            localStorage.removeItem(ADMIN_TOKEN_KEY);
-            localStorage.removeItem(SESSION_KEY);
-            // Chuyển về trang login phù hợp
-            const isAdminPath = window.location.pathname.startsWith('/admin');
-            window.location.href = isAdminPath ? '/login' : '/user/login';
-        }
-        return Promise.reject(err);
-    }
-);
+// // Xử lý lỗi 401/403 → Đăng xuất
+// userApiClient.interceptors.response.use(
+//     res => res,
+//     err => {
+//         const status = err?.response?.status;
+//         if (status === 401 || status === 403) {
+//             localStorage.removeItem(USER_TOKEN_KEY);
+//             localStorage.removeItem(ADMIN_TOKEN_KEY);
+//             localStorage.removeItem(SESSION_KEY);
+//             // Chuyển về trang login phù hợp
+//             const isAdminPath = window.location.pathname.startsWith('/admin');
+//             window.location.href = isAdminPath ? '/login' : '/login';
+//         }
+//         return Promise.reject(err);
+//     }
+// );
 
 export { USER_TOKEN_KEY, ADMIN_TOKEN_KEY, SESSION_KEY };

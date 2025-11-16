@@ -1,28 +1,27 @@
-// src/user/routes/UserRoutes.js
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Layout
-import UserLayout from '../layout/UserLayout';
+import UserLayout from '../components/layouts/UserLayout'; // (Đã sửa đường dẫn)
 
 // Pages
 import HomePage from '../pages/HomePage';
-import ProductListPage from '../pages/ProductListPage';
-import ProductDetailPage from '../pages/ProductDetailPage';
+import ProductListPage from '../pages/user/ProductListPage';
+import ProductDetailPage from '../pages/user/ProductDetailPage';
+import WishlistPage from '../pages/user/wishlists/WishlistPage';
 
-// SỬA ĐƯỜNG DẪN: từ pages/WishlistPage → pages/wishlists/WishlistPage
-import WishlistPage from '../user/pages/wishlists/WishlistPage';
+// (Tạm ẩn 2 tệp chi tiết chưa tạo)
+// import CategoryPage from '../pages/CategoryPage';
+// import BrandPage from '../pages/BrandPage';
 
-import CategoryPage from '../pages/CategoryPage';
-import BrandPage from '../pages/BrandPage';
-import CartPage from '../pages/CartPage';
-import UserLoginPage from '../pages/UserLoginPage';
-import RegisterPage from '../pages/RegisterPage';
-import ProfilePage from '../pages/ProfilePage';
+import CartPage from '../pages/user/CartPage';
+import UserLoginPage from '../pages/LoginPage'; // (Sửa: Dùng LoginPage chung)
+import RegisterPage from '../pages/RegisterPage'; // (Sửa: Đường dẫn đúng)
+import ProfilePage from '../pages/user/ProfilePage';
 
 // Danh sách
-import CategoryListPage from '../pages/CategoryListPage';
-import BrandListPage from '../pages/BrandListPage';
+import CategoryListPage from '../pages/user/CategoryListPage';
+import BrandListPage from '../pages/user/BrandListPage';
 
 const UserRoutes = () => {
     return (
@@ -39,11 +38,13 @@ const UserRoutes = () => {
                 <Route path="categories" element={<CategoryListPage />} />
                 <Route path="brands" element={<BrandListPage />} />
 
-                {/* CHI TIẾT */}
-                <Route path="categories/:slug" element={<CategoryPage />} />
-                <Route path="brands/:slug" element={<BrandPage />} />
+                {/* (Tạm ẩn 2 tuyến đường bị lỗi) */}
+                {/* <Route path="categories/:slug" element={<CategoryPage />} /> */}
+                {/* <Route path="brands/:slug" element={<BrandPage />} /> */}
 
                 <Route path="cart" element={<CartPage />} />
+
+                {/* ĐÂY LÀ ĐƯỜNG DẪN ĐÚNG */}
                 <Route path="login" element={<UserLoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
                 <Route path="profile" element={<ProfilePage />} />

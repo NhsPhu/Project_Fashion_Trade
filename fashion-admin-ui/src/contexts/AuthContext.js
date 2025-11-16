@@ -1,6 +1,6 @@
 // src/contexts/AuthContext.js
 import React, { createContext, useState, useEffect } from 'react';
-import AuthService from '../services/AuthService';
+import AuthService from '../services/admin/AuthService';
 import axios from 'axios';
 
 axios.defaults.baseURL = 'http://localhost:8080';

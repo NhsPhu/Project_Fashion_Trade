@@ -4,8 +4,8 @@ import { Card, Col, Row, Statistic, Button, Spin, Tag, Space } from 'antd';
 import { ShoppingCartOutlined, UserOutlined, PercentageOutlined, StockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import ReportService from '../services/ReportService';
-import InventoryService from '../services/InventoryService';
+import ReportService from '../services/admin/ReportService';
+import InventoryService from '../services/admin/InventoryService';
 import moment from 'moment';
 
 function DashboardPage() {

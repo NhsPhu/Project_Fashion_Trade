@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom'; // 1. Import Link
-import AuthService from '../services/AuthService';
+import AuthService from '../services/admin/AuthService';
 import { Form, Input, Button, Card, Typography, notification } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
 
