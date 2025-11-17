@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import BrandService from '../../services/user/BrandService'; // ← Tạo sau
 
 const BrandListPage = () => {
-    const [brands, setBrands] = useState([]);
+    const [brands, setBrands] = useState([] );
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 

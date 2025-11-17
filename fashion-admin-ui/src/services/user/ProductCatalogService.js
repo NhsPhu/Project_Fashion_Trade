@@ -1,24 +1,24 @@
 // src/services/user/ProductCatalogService.js
-import { userApiClient } from './httpClient';
+import { publicApiClient } from './httpClient';
 
 const ProductCatalogService = {
   getProducts: async (filters = {}) => {
-    const response = await userApiClient.get('/public/products', { params: filters });
+    const response = await publicApiClient.get('/public/products', { params: filters });
     return response.data;
   },
 
   getProductById: async (id) => {
-    const response = await userApiClient.get(`/public/products/${id}`);
+    const response = await publicApiClient.get(`/public/products/${id}`);
     return response.data;
   },
 
   getCategories: async () => {
-    const response = await userApiClient.get('/public/categories');
+    const response = await publicApiClient.get('/public/categories');
     return response.data;
   },
 
   getBrands: async () => {
-    const response = await userApiClient.get('/public/brands');
+    const response = await publicApiClient.get('/public/brands');
     return response.data;
   },
 };

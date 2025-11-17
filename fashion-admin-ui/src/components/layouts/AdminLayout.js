@@ -13,7 +13,9 @@ import {
     BarChartOutlined,
     SettingOutlined,
     TeamOutlined,
-    HomeOutlined
+    HomeOutlined,
+    FileTextOutlined,
+    MessageOutlined,
 } from '@ant-design/icons';
 
 // (Đã sửa ở lượt trước)
@@ -41,6 +43,9 @@ const menuItems = [
     { key: '/admin/coupons', icon: <GiftOutlined />, label: <Link to="/admin/coupons">Mã giảm giá</Link> },
     { key: '/admin/reports', icon: <BarChartOutlined />, label: <Link to="/admin/reports">Báo cáo</Link> },
     { key: '/admin/config', icon: <SettingOutlined />, label: <Link to="/admin/config">Cài đặt</Link> },
+    { key: '/admin/reviews', icon: <MessageOutlined />, label: <Link to="/admin/reviews">Quản lý đánh giá</Link> },
+    { key: '/admin/cms', icon: <FileTextOutlined />, label: <Link to="/admin/cms">CMS</Link> },
+
 ];
 
 const AdminLayout = () => {

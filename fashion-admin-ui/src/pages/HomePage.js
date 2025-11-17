@@ -1,41 +1,10 @@
 import React, { useEffect, useState } from 'react';
-// 1. ĐÃ XÓA 'Spin' KHỎI DÒNG IMPORT NÀY
-import { Card, Row, Col, Button, Carousel, Typography, Space, Skeleton, notification } from 'antd';
+import { Card, Row, Col, Button, Carousel, Typography, Space } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import ProductCatalogService from '../services/user/ProductCatalogService';
 import './HomePage.css';
 
-const { Title, Paragraph, Text } = Typography;
-
-// (Carousel items)
-const carouselItems = [
-  {
-    title: 'Bộ Sưu Tập Mùa Hè 2025',
-    subtitle: 'Giảm giá lên đến 50% cho các sản phẩm mới nhất.',
-    buttonText: 'Mua ngay',
-    background: 'linear-gradient(to right, #6a11cb, #2575fc)',
-  },
-  {
-    title: 'Thời Trang Công Sở',
-    subtitle: 'Thanh lịch và chuyên nghiệp. Chất liệu cao cấp.',
-    buttonText: 'Xem thêm',
-    background: 'linear-gradient(to right, #f857a6, #ff5858)',
-  }
-];
-
-// (Component LoadingSkeleton)
-const LoadingSkeleton = () => (
-    <Row gutter={[16, 16]}>
-      {Array.from({ length: 8 }).map((_, index) => (
-          <Col xs={24} sm={12} md={8} lg={6} key={index}>
-            <Card>
-              <Skeleton.Image active style={{ height: 200, width: '100%' }} />
-              <Skeleton active paragraph={{ rows: 2 }} style={{ marginTop: 16 }} />
-            </Card>
-          </Col>
-      ))}
-    </Row>
-);
+const { Title, Paragraph } = Typography;
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -51,13 +20,11 @@ const HomePage = () => {
           size: 8,
           sort: 'newest',
         });
+        console.log('HomePage products response:', response);
         setFeaturedProducts(response.content || []);
       } catch (error) {
         console.error('Error loading products:', error);
-        notification.error({
-          message: 'Lỗi tải sản phẩm',
-          description: error.response?.data?.message || error.message,
-        });
+        console.error('Error details:', error.response?.data || error.message);
         setFeaturedProducts([]);
       } finally {
         setLoading(false);
@@ -66,26 +33,35 @@ const HomePage = () => {
     loadProducts();
   }, []);
 
-  const formatCurrency = (amount) => {
-    if (typeof amount !== 'number') return 'Liên hệ';
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
+  const carouselImages = [
+    {
+      title: 'DÙ CHỈ 1 LY',
+      subtitle: 'Áp dụng cho đơn hàng từ 18K, có tối thiểu 1 ly nước bất kì',
+      buttonText: 'Nhập mã FREESHIP2025',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    },
+    {
+      title: 'SALE LỚN',
+      subtitle: 'Giảm giá lên đến 50% cho tất cả sản phẩm',
+      buttonText: 'Mua ngay',
+      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    },
+  ];
 
   return (
       <div className="home-page">
-        {/* Carousel */}
         <Carousel autoplay className="home-carousel">
-          {carouselItems.map((item, index) => (
+          {carouselImages.map((item, index) => (
               <div key={index}>
                 <div className="carousel-slide" style={{ background: item.background }}>
                   <div className="carousel-content">
-                    <Title level={1} className="carousel-title">
+                    <Title level={1} style={{ color: '#fff', marginBottom: 16 }}>
                       {item.title}
                     </Title>
-                    <Paragraph className="carousel-subtitle">
+                    <Paragraph style={{ color: '#fff', fontSize: 18, marginBottom: 24 }}>
                       {item.subtitle}
                     </Paragraph>
-                    <Button type="primary" size="large" className="carousel-button">
+                    <Button type="primary" size="large" style={{ backgroundColor: '#fff', color: '#333' }}>
                       {item.buttonText}
                     </Button>
                   </div>
@@ -94,18 +70,18 @@ const HomePage = () => {
           ))}
         </Carousel>
 
-        {/* Khu vực Sản phẩm */}
         <div className="home-container">
           <Title level={2} style={{ textAlign: 'center', marginTop: 48, marginBottom: 32 }}>
             Sản phẩm nổi bật
           </Title>
 
-          {/* 2. Chúng ta đang dùng <LoadingSkeleton /> (không dùng <Spin />) */}
           {loading ? (
-              <LoadingSkeleton />
+              <div style={{ textAlign: 'center', padding: 48 }}>
+                <p>Đang tải sản phẩm...</p>
+              </div>
           ) : featuredProducts.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 48 }}>
-                <Text type="secondary">Chưa có sản phẩm nổi bật</Text>
+                <p style={{ color: '#999' }}>Chưa có sản phẩm nổi bật</p>
               </div>
           ) : (
               <Row gutter={[16, 16]}>
@@ -113,41 +89,40 @@ const HomePage = () => {
                     <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
                       <Card
                           hoverable
-                          className="product-card"
                           cover={
                             <img
                                 alt={product.name}
-                                src={product.defaultImage || 'https://via.placeholder.com/300x300?text=No+Image'}
-                                className="product-card-image"
+                                src={product.defaultImage || '/placeholder.jpg'}
+                                style={{ height: 200, objectFit: 'cover' }}
                                 onError={(e) => {
-                                  e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
+                                  e.target.src = 'https://via.placeholder.com/200x200?text=No+Image';
                                 }}
                             />
                           }
-                          onClick={() => navigate(`/products/${product.id}`)}
+                          onClick={() => navigate(`/user/products/${product.id}`)}
                       >
                         <Card.Meta
-                            title={<div className="product-card-title">{product.name}</div>}
+                            title={product.name}
                             description={
                               <Space direction="vertical" size="small">
-                                <div className="product-card-price">
-                                  {product.minSalePrice && product.minSalePrice > 0 && product.minSalePrice !== product.minPrice ? (
-                                      <>
-                                        <Text strong type="danger">
-                                          {formatCurrency(product.minSalePrice)}
-                                        </Text>
-                                        <Text delete type="secondary" style={{ marginLeft: 8 }}>
-                                          {formatCurrency(product.minPrice)}
-                                        </Text>
-                                      </>
-                                  ) : (
-                                      <Text strong>
-                                        {formatCurrency(product.minPrice)}
-                                      </Text>
-                                  )}
-                                </div>
+                        <span>
+                          {product.minSalePrice && product.minSalePrice > 0 && product.minSalePrice !== product.minPrice ? (
+                              <>
+                              <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+                                {product.minSalePrice.toLocaleString('vi-VN')} ₫
+                              </span>
+                                <span style={{ textDecoration: 'line-through', marginLeft: 8, color: '#999' }}>
+                                {product.minPrice?.toLocaleString('vi-VN') || '0'} ₫
+                              </span>
+                              </>
+                          ) : (
+                              <span style={{ fontWeight: 'bold' }}>
+                              {product.minPrice?.toLocaleString('vi-VN') || '0'} ₫
+                            </span>
+                          )}
+                        </span>
                                 {product.averageRating && product.averageRating > 0 && (
-                                    <Text type="secondary">⭐ {product.averageRating.toFixed(1)} ({product.reviewCount || 0})</Text>
+                                    <span>⭐ {product.averageRating.toFixed(1)} ({product.reviewCount || 0} đánh giá)</span>
                                 )}
                               </Space>
                             }
@@ -159,7 +134,7 @@ const HomePage = () => {
           )}
 
           <div style={{ textAlign: 'center', marginTop: 32 }}>
-            <Button type="primary" size="large" onClick={() => navigate('/products')}>
+            <Button type="primary" size="large" onClick={() => navigate('/user/products')}>
               Xem tất cả sản phẩm
             </Button>
           </div>
@@ -168,4 +143,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default HomePage
