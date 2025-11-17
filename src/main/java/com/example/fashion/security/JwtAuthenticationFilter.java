@@ -1,12 +1,12 @@
 package com.example.fashion.security;
 
-
 import com.example.fashion.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -27,48 +27,63 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private CustomUserDetailsService customUserDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        try {
-            // 1. Lấy JWT từ request
-            String jwt = getJwtFromRequest(request);
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-            // 2. Xác thực token
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
 
-                // 3. Lấy email (username) từ token
-                String email = tokenProvider.getEmailFromJWT(jwt);
-
-                // 4. Tải thông tin user (bao gồm cả roles)
-                UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
-
-                // 5. Tạo đối tượng xác thực
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                // 6. Thiết lập xác thực cho SecurityContext
-                // (Báo cho Spring Security biết user này đã đăng nhập)
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
-        } catch (Exception ex) {
-            // Ghi log (ví dụ: logger.error("...", ex))
-            System.out.println("Không thể thiết lập xác thực người dùng: " + ex.getMessage());
+        // BỎ QUA HOÀN TOÀN CÁC PUBLIC API
+        if (isPublicRequest(path, method)) {
+            filterChain.doFilter(request, response);
+            return;
         }
 
-        // 7. Chuyển request/response cho filter tiếp theo
+        // CHỈ XỬ LÝ JWT NẾU KHÔNG PHẢI PUBLIC
+        String jwt = getJwtFromRequest(request);
+        if (StringUtils.hasText(jwt)) {
+            try {
+                if (tokenProvider.validateToken(jwt)) {
+                    String email = tokenProvider.getEmailFromJWT(jwt);
+                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            } catch (Exception e) {
+                // Token lỗi → bỏ qua, KHÔNG ném 403
+            }
+        }
+
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * Tiện ích trích xuất Token từ "Authorization: Bearer <token>"
-     */
+    private boolean isPublicRequest(String path, String method) {
+        // CORS preflight
+        if ("OPTIONS".equalsIgnoreCase(method)) return true;
+
+        // Auth APIs
+        if (path.startsWith("/api/v1/auth/") || path.startsWith("/api/v1/admin/auth/")) return true;
+
+        // Public GET APIs
+        if ("GET".equalsIgnoreCase(method)) {
+            return path.startsWith("/api/v1/public/products/") ||
+                    path.startsWith("/api/v1/products/") ||
+                    path.startsWith("/api/v1/categories/") ||
+                    path.startsWith("/api/v1/brands/");
+        }
+
+        return false;
+    }
+
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // Bỏ "Bearer "
+            return bearerToken.substring(7);
         }
         return null;
     }

@@ -5,16 +5,16 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:808
 
 const USER_TOKEN_KEY = 'user_token';
 const ADMIN_TOKEN_KEY = 'admin_token';
-const SESSION_KEY = 'user_cart_session';
+const SESSION_KEY = 'user_cart_session'; // ĐÃ CÓ
 
-// 1. CLIENT CÔNG KHAI: KHÔNG GỬI TOKEN
+// PUBLIC CLIENT – KHÔNG GỬI TOKEN
 export const publicApiClient = axios.create({
     baseURL: API_BASE_URL,
     headers: { 'Content-Type': 'application/json' },
     withCredentials: false,
 });
 
-// 2. CLIENT USER: GỬI TOKEN
+// USER CLIENT – GỬI TOKEN
 export const userApiClient = axios.create({
     baseURL: API_BASE_URL,
     headers: { 'Content-Type': 'application/json' },
@@ -37,4 +37,5 @@ userApiClient.interceptors.request.use(config => {
     return config;
 });
 
+// THÊM DÒNG NÀY: EXPORT CÁC KEY
 export { USER_TOKEN_KEY, ADMIN_TOKEN_KEY, SESSION_KEY };
