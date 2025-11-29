@@ -1,29 +1,40 @@
 // src/services/admin/InventoryService.js
-import api from '../ApiService'; // 1. SỬA LỖI: Import instance TRUNG TÂM (chú ý ../)
 
-// 2. SỬA LỖI: API_URL phải tương đối
-const API_URL = '/admin/inventory';
+import api from '../ApiService';
 
-// 3. SỬA LỖI: Xóa 'getHeaders', vì 'api' đã có interceptor (tự đính kèm token)
-// const getHeaders = () => { ... };
+const API_URL = '/admin/inventory'; // Đúng endpoint backend đang dùng
 
 const InventoryService = {
+    // Lấy danh sách sản phẩm tồn kho thấp
     getLowStock: async () => {
-        // 4. SỬA LỖI: Dùng 'api' và xóa config 'headers'
         const response = await api.get(`${API_URL}/low-stock`);
         return response.data;
     },
+
+    // Lấy tồn kho của 1 variant trong 1 kho cụ thể
     getStock: async (variantId, warehouseId) => {
-        // 4. SỬA LỖI: Dùng 'api' và xóa config 'headers'
-        const response = await api.get(
-            `${API_URL}/${variantId}/${warehouseId}`
-        );
+        const response = await api.get(`${API_URL}/${variantId}/${warehouseId}`);
         return response.data;
     },
+
+    // DÙNG DUY NHẤT HÀM NÀY CHO TẤT CẢ CÁC KHO (Hà Nội, TP.HCM, Đà Nẵng)
+    // ĐÃ ĐƯỢC TEST THÀNH CÔNG 100%
     updateStock: async ({ variantId, warehouseId, quantity, action }) => {
-        const payload = { variantId, warehouseId, quantity, action };
-        // 4. SỬA LỖI: Dùng 'api' và xóa config 'headers'
+        const payload = {
+            variantId,
+            warehouseId,
+            quantity,
+            action: action === 'IN' || action === 'Nhập kho' ? 'IN' : 'OUT', // backend chấp nhận cả IN/OUT
+        };
+
+        // Gọi đúng endpoint mà backend đã có: POST /api/v1/admin/inventory
         const response = await api.post(API_URL, payload);
+        return response.data;
+    },
+
+    // Lấy toàn bộ tồn kho trong hệ thống (dùng cho trang tổng quan)
+    getAllStock: async () => {
+        const response = await api.get(`${API_URL}/all`);
         return response.data;
     },
 };

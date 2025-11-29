@@ -1,28 +1,37 @@
 // src/pages/report/ReportDashboard.js
-import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Row, Col, Statistic, DatePicker, Button, Table, Tag, Space } from 'antd';
-import { DownloadOutlined} from '@ant-design/icons';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Card, Row, Col, Statistic, DatePicker, Button, Table, Space, message } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ReportService from '../../../services/admin/ReportService';
-import moment from 'moment';
-import { useNavigate } from 'react-router-dom';
 import InventoryService from '../../../services/admin/InventoryService';
+import moment from 'moment';
 
 const { RangePicker } = DatePicker;
 
 const ReportDashboard = () => {
-    const [dateRange, setDateRange] = useState([moment().startOf('month'), moment().endOf('month')]);
+    // Range chính khi bấm Áp dụng
+    const [selectedRange, setSelectedRange] = useState([
+        moment().startOf('month'),
+        moment().endOf('month')
+    ]);
+
+    // Ref để giữ date không gây re-render → KHÔNG BAO GIỜ NHẢY NĂM
+    const tempRangeRef = useRef([
+        moment().startOf('month'),
+        moment().endOf('month')
+    ]);
+
     const [revenueData, setRevenueData] = useState([]);
     const [topProducts, setTopProducts] = useState([]);
     const [lowStock, setLowStock] = useState([]);
     const [stats, setStats] = useState({});
     const [loading, setLoading] = useState(false);
 
-    const navigate = useNavigate();
-
     const fetchData = useCallback(async () => {
         setLoading(true);
-        const [start, end] = dateRange;
+        const [start, end] = selectedRange;
+
         try {
             const [rev, orders, top, low, customers] = await Promise.all([
                 ReportService.getRevenue('day', start, end),
@@ -32,106 +41,105 @@ const ReportDashboard = () => {
                 ReportService.getCustomers(start, end)
             ]);
 
-            setRevenueData(rev.breakdown.map(d => ({
+            setRevenueData((rev.breakdown || []).map(d => ({
                 date: moment(d.date).format('DD/MM'),
-                revenue: d.revenue,
-                orders: d.orders
+                revenue: d.revenue || 0,
+                orders: d.orders || 0
             })));
 
-            setTopProducts(top);
-            setLowStock(low);
+            setTopProducts(top || []);
+            setLowStock(low || []);
 
             setStats({
-                revenue: rev.totalRevenue,
-                totalOrders: rev.totalOrders,
-                completed: orders.completed,
-                cancelled: orders.cancelled,
-                newCustomers: customers.newCustomers,
-                conversion: customers.conversionRate
+                revenue: rev.totalRevenue || 0,
+                totalOrders: rev.totalOrders || 0,
+                completed: orders?.completed || 0,
+                cancelled: orders?.cancelled || 0,
+                newCustomers: customers?.newCustomers || 0,
+                conversion: customers?.conversionRate || 0
             });
 
         } catch (error) {
+            message.error('Lỗi tải dữ liệu báo cáo');
             console.error(error);
         } finally {
             setLoading(false);
         }
-    }, [dateRange]);
+    }, [selectedRange]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
-    // ⭐⭐⭐ Thêm hàm Export Excel ⭐⭐⭐
-    const handleExportExcel = async () => {
-        const [start, end] = dateRange;
-
-        try {
-            // type = "full" hoặc tùy API backend
-            await ReportService.exportExcel("full", start, end);
-        } catch (error) {
-            console.error("Xuất Excel thất bại:", error);
+    /** BẤM ÁP DỤNG — cập nhật ngày chính */
+    const handleApply = () => {
+        if (tempRangeRef.current[0] && tempRangeRef.current[1]) {
+            setSelectedRange([...tempRangeRef.current]);
+        } else {
+            message.warning('Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc');
         }
     };
 
-    const columnsTop = [
-        { title: 'Sản phẩm', dataIndex: 'productName', key: 'productName' },
-        { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
-        { title: 'Doanh thu', dataIndex: 'revenue', key: 'revenue', render: (revenue) => `₫${revenue.toLocaleString()}` },
-    ];
-
-    const columnsLow = [
-        { title: 'Sản phẩm', dataIndex: 'productName', key: 'productName' },
-        { title: 'Biến thể', dataIndex: 'variantName', key: 'variantName' },
-        { title: 'Tồn kho', dataIndex: 'quantity', key: 'quantity', render: (qty) => <Tag color="red">{qty}</Tag> },
-    ];
+    /** Xuất Excel */
+    const handleExportExcel = async () => {
+        try {
+            await ReportService.exportExcel('full', selectedRange[0], selectedRange[1]);
+        } catch (error) {
+            message.error('Xuất Excel thất bại');
+        }
+    };
 
     return (
-        <div>
-            <Space direction="vertical" style={{ width: '100%' }}>
-                <Row gutter={16} align="middle">
-                    <Col>
-                        <RangePicker
-                            value={dateRange}
-                            onChange={setDateRange}
-                            format="YYYY-MM-DD"
-                        />
-                    </Col>
-                    <Col>
-                        <Button type="primary" onClick={fetchData}>Tải báo cáo</Button>
-                    </Col>
+        <div style={{ padding: 24 }}>
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
 
-                    {/* ⭐⭐⭐ Gắn onClick cho Xuất Excel ⭐⭐⭐ */}
-                    <Col flex="auto" style={{ textAlign: 'right' }}>
+                {/* ----------- LỊCH ĐÃ FIX HOÀN CHỈNH ------------- */}
+                <Card>
+                    <Space align="center">
+                        <RangePicker
+                            value={tempRangeRef.current}    // FIX QUAN TRỌNG NHẤT
+                            format="DD/MM/YYYY"
+                            allowClear={false}
+                            getPopupContainer={trigger => trigger.parentNode}
+
+                            // chỉ update ref — không re-render → không nhảy năm
+                            onChange={(dates) => {
+                                if (dates && dates[0] && dates[1]) {
+                                    tempRangeRef.current = dates;
+                                }
+                            }}
+
+                            renderExtraFooter={() => (
+                                <div style={{ textAlign: 'center', padding: '8px' }}>
+                                    <Button type="primary" size="small" onClick={handleApply}>
+                                        Áp dụng ngay
+                                    </Button>
+                                </div>
+                            )}
+                        />
+
+                        <Button type="primary" onClick={handleApply}>
+                            Áp dụng
+                        </Button>
+
                         <Button icon={<DownloadOutlined />} onClick={handleExportExcel}>
                             Xuất Excel
                         </Button>
-                    </Col>
-                </Row>
+                    </Space>
+                </Card>
 
+                {/* ----------- THỐNG KÊ ------------- */}
                 <Row gutter={16}>
                     <Col span={6}>
                         <Card loading={loading}>
-                            <Statistic title="Doanh thu" value={stats.revenue} prefix="₫" precision={0} />
+                            <Statistic title="Doanh thu" value={stats.revenue} suffix="đ" />
                         </Card>
                     </Col>
                     <Col span={6}>
                         <Card loading={loading}>
-                            <Statistic title="Tổng đơn hàng" value={stats.totalOrders} />
+                            <Statistic title="Đơn hàng" value={stats.totalOrders} />
                         </Card>
                     </Col>
-                    <Col span={6}>
-                        <Card loading={loading}>
-                            <Statistic title="Đơn hoàn thành" value={stats.completed} />
-                        </Card>
-                    </Col>
-                    <Col span={6}>
-                        <Card loading={loading}>
-                            <Statistic title="Đơn hủy" value={stats.cancelled} />
-                        </Card>
-                    </Col>
-                </Row>
-
-                <Row gutter={16}>
                     <Col span={6}>
                         <Card loading={loading}>
                             <Statistic title="Khách mới" value={stats.newCustomers} />
@@ -144,6 +152,7 @@ const ReportDashboard = () => {
                     </Col>
                 </Row>
 
+                {/* ----------- BIỂU ĐỒ ------------- */}
                 <Card title="Doanh thu theo ngày" loading={loading}>
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={revenueData}>
@@ -159,31 +168,44 @@ const ReportDashboard = () => {
                     </ResponsiveContainer>
                 </Card>
 
+                {/* ----------- BẢNG DỮ LIỆU ------------- */}
                 <Row gutter={16}>
                     <Col span={12}>
                         <Card title="Sản phẩm bán chạy" loading={loading}>
                             <Table
                                 dataSource={topProducts}
-                                columns={columnsTop}
+                                columns={[
+                                    { title: 'Sản phẩm', dataIndex: 'productName' },
+                                    { title: 'SKU', dataIndex: 'sku' },
+                                    { title: 'SL bán', dataIndex: 'soldQuantity' },
+                                    { title: 'Doanh thu', dataIndex: 'revenue', render: v => v?.toLocaleString('vi-VN') + 'đ' },
+                                ]}
                                 pagination={false}
                                 rowKey="productId"
-                                onRow={(record) => ({
-                                    onClick: () => navigate(`/admin/products/${record.productId}`)
-                                })}
                             />
                         </Card>
                     </Col>
+
                     <Col span={12}>
                         <Card title="Tồn kho thấp" loading={loading}>
                             <Table
                                 dataSource={lowStock}
-                                columns={columnsLow}
+                                columns={[
+                                    { title: 'Sản phẩm', dataIndex: 'productName' },
+                                    { title: 'SKU', dataIndex: 'sku' },
+                                    { title: 'Tồn kho', dataIndex: 'currentStock', render: v => (
+                                            <span style={{ color: v < 5 ? 'red' : 'orange', fontWeight: 'bold' }}>
+                                            {v}
+                                        </span>
+                                        )},
+                                ]}
                                 pagination={false}
                                 rowKey="variantId"
                             />
                         </Card>
                     </Col>
                 </Row>
+
             </Space>
         </div>
     );

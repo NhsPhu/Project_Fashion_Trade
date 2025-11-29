@@ -2,7 +2,6 @@ package com.example.fashion.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -10,7 +9,7 @@ import java.time.LocalDateTime;
         name = "inventory",
         uniqueConstraints = @UniqueConstraint(columnNames = {"variant_id", "warehouse_id"})
 )
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Inventory {
 
     @Id
@@ -24,6 +23,10 @@ public class Inventory {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;
+
+    // THÊM DÒNG NÀY – QUAN TRỌNG NHẤT!
+    @Column(name = "product_id", nullable = false)
+    private Long productId;
 
     @Column(nullable = false)
     private Integer quantity = 0;

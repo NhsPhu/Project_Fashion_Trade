@@ -5,7 +5,11 @@ import lombok.*;
 
 public class InventoryResponseDTO {
 
-    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class LowStockItem {
         private Long inventoryId;
         private Long variantId;
@@ -14,9 +18,16 @@ public class InventoryResponseDTO {
         private String productName;
         private String attributes;
         private String warehouseName;
+
+        // ✅ THÊM FIELD NÀY
+        private Boolean isLowStock;
     }
 
-    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class StockInfo {
         private Long inventoryId;
         private Long variantId;
@@ -26,10 +37,14 @@ public class InventoryResponseDTO {
         private String warehouseName;
     }
 
-    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class UpdateSuccess {
-        @Builder.Default                  // ← THÊM DÒNG NÀY
-        private boolean success = true;   // ← Bây giờ Lombok sẽ giữ lại giá trị default
+        @Builder.Default
+        private boolean success = true;
         private String message;
     }
 }
