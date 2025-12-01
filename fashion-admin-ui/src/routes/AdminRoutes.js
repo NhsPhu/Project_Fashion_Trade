@@ -41,7 +41,7 @@ import CmsPage from '../pages/admin/cms/CmsPage';
 
 
 function AdminRoutes() {
-    const { isAuthenticated, userType } = useAuth(); // (Sử dụng Context của Admin)
+    const { isAuthenticated } = useAuth(); // (Sử dụng Context của Admin)
 
     return (
         <Routes>

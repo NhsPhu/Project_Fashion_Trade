@@ -1,173 +1,187 @@
 // src/pages/inventory/InventoryUpdatePage.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import InventoryService from '../../../services/admin/InventoryService';
 import ApiService from '../../../services/ApiService';
-import { Form, Button, InputNumber, Select, Typography, notification, Card, Spin } from 'antd';
+import {
+    Form,
+    Button,
+    InputNumber,
+    Select,
+    Typography,
+    notification,
+    Card,
+    Space,
+} from 'antd';
 
 const { Title } = Typography;
+const { Option } = Select;
 
-function InventoryUpdatePage() {
+const InventoryUpdatePage = () => {
     const navigate = useNavigate();
-    const { variantId } = useParams();
+    const { variantId: vId } = useParams();
+    const variantId = parseInt(vId, 10);
+
+    const formRef = useRef();
     const [form] = Form.useForm();
+
     const [loading, setLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
     const [warehouses, setWarehouses] = useState([]);
-    const [currentStock, setCurrentStock] = useState(null);
+    const [currentStock, setCurrentStock] = useState(0);
+
+    const loadStockForWarehouse = useCallback(
+        async (warehouseId) => {
+            if (!warehouseId || !variantId) return;
+            try {
+                const res = await InventoryService.getStock(variantId, warehouseId);
+                setCurrentStock(res.quantity || 0);
+            } catch (err) {
+                setCurrentStock(0);
+            }
+        },
+        [variantId]
+    );
 
     useEffect(() => {
-        const loadData = async () => {
+        const init = async () => {
+            setLoading(true);
             try {
-                // BƯỚC 1: GỌI API WAREHOUSES
-                console.log('Gọi API /api/v1/admin/warehouses...');
-                const response = await ApiService.get('/api/v1/admin/warehouses');
-                console.log('Response từ API:', response); // DEBUG
+                // ĐÚNG URL – chỉ 1 lần /admin
+                const res = await ApiService.get('/admin/warehouses');
+                const list = Array.isArray(res.data) ? res.data : res;
 
-                // XỬ LÝ RESPONSE (ApiService có thể trả data hoặc response.data)
-                const warehouseList = response?.data || response || [];
-                console.log('Danh sách kho:', warehouseList);
-
-                if (!Array.isArray(warehouseList) || warehouseList.length === 0) {
-                    notification.warning({
-                        message: 'Không có kho nào',
-                        description: 'API trả về rỗng. Kiểm tra backend.'
-                    });
-                    setWarehouses([]);
+                if (list.length === 0) {
+                    notification.warning({ message: 'Không có kho nào trong hệ thống!' });
                     setLoading(false);
                     return;
                 }
 
-                setWarehouses(warehouseList);
+                setWarehouses(list);
 
-                // BƯỚC 2: TÌM TỒN KHO
-                let found = false;
-                for (const wh of warehouseList) {
-                    try {
-                        const stockRes = await InventoryService.getStock(variantId, wh.id);
-                        console.log(`Tồn kho tại ${wh.name}:`, stockRes.quantity);
-                        form.setFieldsValue({
-                            warehouseId: wh.id,
-                            quantity: stockRes.quantity || 0,
-                            action: 'IN'
-                        });
-                        setCurrentStock(stockRes.quantity || 0);
-                        found = true;
-                        break;
-                    } catch (err) {
-                        console.log(`Không có tồn kho tại kho ${wh.name}`);
-                    }
-                }
+                const defaultWh = list[0];
 
-                if (!found) {
-                    form.setFieldsValue({
-                        warehouseId: warehouseList[0].id,
-                        quantity: 0,
-                        action: 'IN'
-                    });
-                    setCurrentStock(0);
-                }
+                // Gọi trực tiếp, không dùng setTimeout → hết lỗi 403
+                form.setFieldsValue({
+                    warehouseId: defaultWh.id,
+                    action: 'IN',
+                    quantity: 1,
+                });
 
+                await loadStockForWarehouse(defaultWh.id);
             } catch (err) {
-                console.error('Lỗi khi gọi API warehouses:', err);
-                const status = err.response?.status;
-                const msg = err.response?.data?.message || err.message;
-
-                if (status === 403) {
-                    notification.error({ message: 'Không có quyền', description: 'Bạn không có quyền xem kho.' });
-                } else if (status === 404) {
-                    notification.error({ message: 'API không tồn tại', description: '/api/v1/admin/warehouses không hoạt động.' });
-                } else {
-                    notification.error({ message: 'Lỗi tải kho', description: `${status}: ${msg}` });
-                }
+                console.error('Lỗi tải danh sách kho:', err);
+                notification.error({ message: 'Không thể tải danh sách kho' });
             } finally {
                 setLoading(false);
             }
         };
 
-        loadData();
-    }, [variantId, form]);
+        init();
+    }, [variantId, form, loadStockForWarehouse]);
 
     const onFinish = async (values) => {
         setIsUpdating(true);
         try {
-            await InventoryService.updateStock({
-                variantId: parseInt(variantId),
-                warehouseId: values.warehouseId,
-                quantity: values.quantity,
-                action: values.action
+            const payload = {
+                variantId,
+                warehouseId: Number(values.warehouseId),
+                action: values.action,
+                quantity: Number(values.quantity),
+            };
+
+            console.log('Gửi cập nhật tồn kho:', payload);
+
+            await InventoryService.updateStock(payload);
+
+            notification.success({
+                message: 'Thành công!',
+                description: `Đã ${values.action === 'IN' ? 'nhập' : 'xuất'} kho thành công.`,
             });
-            notification.success({ message: 'Cập nhật tồn kho thành công!' });
+
             navigate('/admin/inventory');
         } catch (err) {
+            console.error('Lỗi cập nhật tồn kho:', err);
             notification.error({
                 message: 'Cập nhật thất bại',
-                description: err.response?.data?.message || err.message
+                description: err.response?.data?.message || err.message || 'Lỗi không xác định',
             });
         } finally {
             setIsUpdating(false);
         }
     };
 
-    if (loading) {
-        return <Spin tip="Đang tải danh sách kho..." size="large" style={{ display: 'block', marginTop: 100 }} />;
-    }
-
     return (
-        <Card style={{ maxWidth: 600, margin: '40px auto' }}>
-            <Title level={3}>Cập nhật tồn kho (Variant ID: {variantId})</Title>
-
-            {currentStock !== null && (
-                <div style={{ marginBottom: 16, color: '#888' }}>
-                    Tồn kho hiện tại: <strong style={{ color: '#1890ff' }}>{currentStock}</strong>
+        <Card
+            title={<Title level={3}>Cập nhật tồn kho - Variant ID: {variantId}</Title>}
+            loading={loading}
+        >
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                <div style={{ fontSize: 18, color: '#595959' }}>
+                    Tồn kho hiện tại:{' '}
+                    <strong style={{ fontSize: 32, color: '#1890ff' }}>
+                        {currentStock}
+                    </strong>
                 </div>
-            )}
 
-            <Form form={form} layout="vertical" onFinish={onFinish}>
-                <Form.Item
-                    name="warehouseId"
-                    label="* Kho"
-                    rules={[{ required: true, message: 'Vui lòng chọn kho!' }]}
-                >
-                    <Select placeholder="Chọn kho">
-                        {warehouses.map(wh => (
-                            <Select.Option key={wh.id} value={wh.id}>
-                                {wh.name} {wh.location ? `(${wh.location})` : ''}
-                            </Select.Option>
-                        ))}
-                    </Select>
-                </Form.Item>
+                <Form form={form} layout="vertical" onFinish={onFinish} ref={formRef}>
+                    <Form.Item
+                        name="warehouseId"
+                        label="Kho"
+                        rules={[{ required: true, message: 'Vui lòng chọn kho!' }]}
+                    >
+                        <Select
+                            placeholder="Chọn kho"
+                            onChange={loadStockForWarehouse}
+                            showSearch
+                            optionFilterProp="children"
+                        >
+                            {warehouses.map((wh) => (
+                                <Option key={wh.id} value={wh.id}>
+                                    {wh.name} {wh.location ? `(${wh.location})` : ''}
+                                </Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
 
-                <Form.Item
-                    name="action"
-                    label="* Hành động"
-                    rules={[{ required: true, message: 'Vui lòng chọn hành động!' }]}
-                >
-                    <Select placeholder="Chọn hành động">
-                        <Select.Option value="IN">Nhập kho</Select.Option>
-                        <Select.Option value="OUT">Xuất kho</Select.Option>
-                    </Select>
-                </Form.Item>
+                    <Form.Item
+                        name="action"
+                        label="Hành động"
+                        initialValue="IN"
+                        rules={[{ required: true }]}
+                    >
+                        <Select>
+                            <Option value="IN">Nhập kho</Option>
+                            <Option value="OUT">Xuất kho</Option>
+                        </Select>
+                    </Form.Item>
 
-                <Form.Item
-                    name="quantity"
-                    label="* Số lượng"
-                    rules={[
-                        { required: true, message: 'Vui lòng nhập số lượng!' },
-                        { type: 'number', min: 1, message: 'Số lượng phải ≥ 1' }
-                    ]}
-                >
-                    <InputNumber min={1} style={{ width: '100%' }} placeholder="Nhập số lượng" />
-                </Form.Item>
+                    <Form.Item
+                        name="quantity"
+                        label="Số lượng"
+                        rules={[
+                            { required: true, message: 'Vui lòng nhập số lượng!' },
+                            { type: 'number', min: 1, message: 'Số lượng phải ≥ 1' },
+                        ]}
+                    >
+                        <InputNumber min={1} style={{ width: '100%' }} />
+                    </Form.Item>
 
-                <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={isUpdating} block size="large">
-                        Thực hiện
-                    </Button>
-                </Form.Item>
-            </Form>
+                    <Form.Item>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={isUpdating}
+                            block
+                            size="large"
+                        >
+                            Thực hiện
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </Space>
         </Card>
     );
-}
+};
 
 export default InventoryUpdatePage;

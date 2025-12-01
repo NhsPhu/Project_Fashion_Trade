@@ -55,39 +55,41 @@ const CouponListPage = () => {
             title: 'Mã',
             dataIndex: 'code',
             key: 'code',
-            render: (code) => <Tag color="blue">{code}</Tag>
+            render: (code) => <Tag color="blue">{code}</Tag>,
         },
-        { title: 'Loại', dataIndex: 'type', key: 'type' },
+        { title: 'Loại', dataIndex: 'type', key: 'type', width: 120 },
         {
             title: 'Giá trị',
-            dataIndex: 'value',
             key: 'value',
-            render: (value, record) =>
-                record.type === 'PERCENT' ? `${value}%` : `₫${value?.toLocaleString()}`
+            render: (_, record) => {
+                if (record.type === 'PERCENT') return <strong>{record.value}%</strong>;
+                if (record.type === 'FREE_SHIPPING') return 'Miễn phí vận chuyển';
+                return <strong>₫{Number(record.value).toLocaleString('vi-VN')}</strong>;
+            },
         },
         {
             title: 'Tổng đơn tối thiểu',
             dataIndex: 'minOrderValue',
-            render: (val) => val ? `₫${val.toLocaleString()}` : 'Không'
+            render: (val) => val ? `₫${Number(val).toLocaleString('vi-VN')}` : 'Không',
         },
         {
             title: 'Hạn dùng',
             dataIndex: 'endDate',
-            render: (date) => new Date(date).toLocaleDateString('vi-VN')
+            render: (date) => new Date(date).toLocaleDateString('vi-VN'),
         },
         {
             title: 'Lượt dùng',
-            dataIndex: 'usedCount',
-            render: (used, record) => `${used}/${record.usageLimit}`
+            render: (_, record) => `${record.usedCount}/${record.usageLimit}`,
         },
         {
             title: 'Trạng thái',
             dataIndex: 'active',
+            key: 'active',
             render: (active) => (
                 <Tag color={active ? 'green' : 'red'}>
-                    {active ? 'Hoạt động' : 'Dừng'}
+                    {active ? 'Hoạt động' : 'Hết hạn'}
                 </Tag>
-            )
+            ),
         },
         {
             title: 'Hành động',
