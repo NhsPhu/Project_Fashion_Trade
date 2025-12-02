@@ -1,7 +1,5 @@
-// src/contexts/UserCartContext.js
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import UserCartService from '../services/user/UserCartService';
-// 1. SỬA LỖI: Import hook 'useAuth' HỢP NHẤT
 import { useAuth } from './AuthContext';
 import { SESSION_KEY } from '../services/user/httpClient';
 
@@ -19,22 +17,19 @@ const loadSessionId = () => {
   try {
     localStorage.setItem(SESSION_KEY, newId);
   } catch (e) {
-    // ignore
+    console.error('Error saving session ID to localStorage:', e);
   }
   return newId;
 };
 
 export const UserCartProvider = ({ children }) => {
   const [cart, setCart] = useState(null);
-  const [sessionId, setSessionId] = useState(loadSessionId());
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(loadSessionId());
 
-  // 2. SỬA LỖI: Lấy token từ hook 'useAuth' HỢP NHẤT
   const { token } = useAuth();
 
-  // BỌC getSessionId TRONG useCallback ĐỂ TRÁNH LỖI DEPENDENCY
   const getSessionId = useCallback(() => {
-    // 3. SỬA LỖI: Logic giữ nguyên, chỉ là tên biến token
     return token ? null : sessionId;
   }, [token, sessionId]);
 
@@ -43,10 +38,11 @@ export const UserCartProvider = ({ children }) => {
     try {
       const sid = getSessionId();
       const response = await UserCartService.getCart(sid);
-      if (!sid && response.sessionId) {
+      if (!token && !sid && response.sessionId) {
         localStorage.setItem(SESSION_KEY, response.sessionId);
         setSessionId(response.sessionId);
       }
+      console.log("Cart synced:", response);
       setCart(response);
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -54,39 +50,57 @@ export const UserCartProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [getSessionId]); // ĐÃ THÊM getSessionId
+  }, [getSessionId, token]);
 
   useEffect(() => {
     syncCart();
   }, [syncCart]);
 
   const addItem = useCallback(async (payload) => {
-    const sid = getSessionId();
-    const response = await UserCartService.addItem(sid, payload);
-    if (!sid && response.sessionId) {
-      localStorage.setItem(SESSION_KEY, response.sessionId);
-      setSessionId(response.sessionId);
+    try {
+        const sid = getSessionId();
+        await UserCartService.addItem(sid, payload);
+        await syncCart();
+    } catch (error) {
+        console.error("Add item error:", error);
+        throw error;
     }
-    setCart(response);
-  }, [getSessionId]);
+  }, [getSessionId, syncCart]);
 
   const updateItem = useCallback(async (itemId, quantity) => {
-    const sid = getSessionId();
-    const response = await UserCartService.updateItem(sid, itemId, quantity);
-    setCart(response);
-  }, [getSessionId]);
+    try {
+        const sid = getSessionId();
+        await UserCartService.updateItem(sid, itemId, quantity);
+        await syncCart();
+    } catch (error) {
+        console.error("Update item error:", error);
+    }
+  }, [getSessionId, syncCart]);
 
   const removeItem = useCallback(async (itemId) => {
-    const sid = getSessionId();
-    await UserCartService.removeItem(sid, itemId);
-    await syncCart();
+    try {
+        const sid = getSessionId();
+        await UserCartService.removeItem(sid, itemId);
+        await syncCart();
+    } catch (error) {
+        console.error("Remove item error:", error);
+    }
   }, [getSessionId, syncCart]);
 
   const clearCart = useCallback(async () => {
-    const sid = getSessionId();
-    await UserCartService.clearCart(sid);
-    setCart({ items: [], totalAmount: 0, totalItems: 0 });
+    try {
+        const sid = getSessionId();
+        await UserCartService.clearCart(sid);
+        setCart({ items: [], totalAmount: 0, totalItems: 0 });
+    } catch (error) {
+        console.error("Clear cart error:", error);
+    }
   }, [getSessionId]);
+
+  // HÀM MỚI: Chỉ xóa giỏ hàng ở frontend
+  const clearCartFrontendOnly = useCallback(() => {
+    setCart({ items: [], totalAmount: 0, totalItems: 0 });
+  }, []);
 
   const value = useMemo(() => ({
     cart,
@@ -97,7 +111,8 @@ export const UserCartProvider = ({ children }) => {
     updateItem,
     removeItem,
     clearCart,
-  }), [cart, sessionId, isLoading, syncCart, addItem, updateItem, removeItem, clearCart]);
+    clearCartFrontendOnly, // Export hàm mới
+  }), [cart, sessionId, isLoading, syncCart, addItem, updateItem, removeItem, clearCart, clearCartFrontendOnly]);
 
   return (
       <CartContext.Provider value={value}>

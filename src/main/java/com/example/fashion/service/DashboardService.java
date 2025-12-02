@@ -18,13 +18,10 @@ public class DashboardService {
     }
 
     public DashboardStatsDTO getDashboardStats() {
-        // 1. Đếm tổng khách hàng (chỉ vai trò CUSTOMER)
         long totalCustomers = userRepository.countByRolesContains(Role.CUSTOMER);
 
-        // 2. Đếm tổng số đơn hàng
         long totalOrders = orderRepository.count();
 
-        // 3. Lấy tổng doanh thu (từ các đơn 'Delivered')
         Double totalRevenue = orderRepository.findTotalRevenue();
 
         return new DashboardStatsDTO(

@@ -3,9 +3,9 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api/v1';
 
-const USER_TOKEN_KEY = 'user_token';
-const ADMIN_TOKEN_KEY = 'admin_token';
-const SESSION_KEY = 'user_cart_session'; // ĐÃ CÓ
+// SỬA LỖI: Dùng chung một key với AuthService
+const TOKEN_KEY = 'app_token'; 
+const SESSION_KEY = 'user_cart_session';
 
 // PUBLIC CLIENT – KHÔNG GỬI TOKEN
 export const publicApiClient = axios.create({
@@ -21,21 +21,20 @@ export const userApiClient = axios.create({
     withCredentials: false,
 });
 
+// Sửa lại interceptor để đọc đúng key
 userApiClient.interceptors.request.use(config => {
-    const adminToken = localStorage.getItem(ADMIN_TOKEN_KEY);
-    const userToken = localStorage.getItem(USER_TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
     const sessionId = localStorage.getItem(SESSION_KEY);
 
-    if (adminToken) {
-        config.headers.Authorization = `Bearer ${adminToken}`;
-    } else if (userToken) {
-        config.headers.Authorization = `Bearer ${userToken}`;
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
     }
+    
     if (sessionId) {
         config.headers['X-Session-Id'] = sessionId;
     }
     return config;
 });
 
-// THÊM DÒNG NÀY: EXPORT CÁC KEY
-export { USER_TOKEN_KEY, ADMIN_TOKEN_KEY, SESSION_KEY };
+// Export các key để dùng ở nơi khác nếu cần
+export { TOKEN_KEY, SESSION_KEY };

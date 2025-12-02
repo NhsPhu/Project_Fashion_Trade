@@ -22,12 +22,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>,
     @Query("SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.variants")
     Page<Product> findAllWithVariants(Pageable pageable);
 
-    // ĐÃ FIX 100% – DÙNG @Query ĐỂ BỎ QUA VIỆC PARSE TÊN
-    @EntityGraph(attributePaths = {"category", "brand", "variants", "images", "sizes"})
+    @EntityGraph(attributePaths = {"category", "brand", "variants", "images"})
     @Query("SELECT p FROM Product p WHERE p.id = :id")
     Optional<Product> findByIdWithAllDetails(@Param("id") Long id);
 
-    @EntityGraph(attributePaths = {"category", "brand", "variants", "images", "sizes"})
+    @EntityGraph(attributePaths = {"category", "brand", "variants", "images"})
     @Query("SELECT p FROM Product p WHERE p.slug = :slug")
     Optional<Product> findBySlugWithAllDetails(@Param("slug") String slug);
 

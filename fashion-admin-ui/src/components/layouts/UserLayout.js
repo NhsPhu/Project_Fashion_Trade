@@ -2,18 +2,15 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Layout, Menu, Badge, Space, Avatar, Button, Dropdown } from 'antd';
-import { ShoppingCartOutlined, HeartOutlined, UserOutlined, LogoutOutlined, AppstoreAddOutlined } from '@ant-design/icons';
+import { ShoppingCartOutlined, HeartOutlined, UserOutlined, LogoutOutlined, AppstoreAddOutlined, HistoryOutlined } from '@ant-design/icons';
 
-// (Đảm bảo các đường dẫn Context này là chính xác)
 import { useUserCart } from '../../contexts/UserCartContext';
-// 1. SỬA LỖI: Import hook 'useAuth' HỢP NHẤT
 import { useAuth } from '../../contexts/AuthContext';
 
-import './UserLayout.css'; // (Tệp CSS mới)
+import './UserLayout.css';
 
 const { Header, Content, Footer } = Layout;
 
-// TẤT CẢ LINKS ĐÃ SỬA (bỏ /user/)
 const menuItems = [
     { key: '/', label: <Link to="/">Home</Link> },
     { key: '/products', label: <Link to="/products">Sản phẩm</Link> },
@@ -26,14 +23,12 @@ const UserLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Lấy context an toàn (Fix lỗi crash loop)
     const cartContext = useUserCart();
-    // 2. SỬA LỖI: Dùng hook 'useAuth' HỢP NHẤT
     const authContext = useAuth();
 
     const cart = cartContext ? cartContext.cart : null;
     const isAuthenticated = authContext ? authContext.isAuthenticated : false;
-    const user = authContext ? authContext.user : null; // Lấy user
+    const user = authContext ? authContext.user : null;
     const logout = authContext ? authContext.logout : () => {};
 
     const cartCount = cart?.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
@@ -43,8 +38,6 @@ const UserLayout = () => {
         navigate('/login');
     };
 
-    // 3. SỬA LỖI: Kiểm tra vai trò từ 'user' HỢP NHẤT
-    // (userType cũng có thể dùng nếu bạn đã sửa AuthContext)
     const isAdmin = user?.roles?.some(role =>
         role === 'SUPER_ADMIN' ||
         role ==='PRODUCT_MANAGER' ||
@@ -55,8 +48,9 @@ const UserLayout = () => {
     const profileMenu = {
         items: [
             { key: 'profile', label: 'Hồ sơ', icon: <UserOutlined />, onClick: () => navigate('/profile') },
-            { key: 'orders', label: 'Lịch sử đơn hàng', onClick: () => navigate('/profile?tab=orders') },
-            // (Thêm link Admin nếu có quyền)
+            // SỬA LỖI: Điều hướng đến trang /user/orders
+            { key: 'orders', label: 'Đơn hàng của tôi', icon: <HistoryOutlined />, onClick: () => navigate('/user/orders') },
+            
             ...(isAdmin ?
                 [
                     { type: 'divider' },
@@ -83,7 +77,6 @@ const UserLayout = () => {
                         items={menuItems}
                     />
 
-                    {/* SỬA LINKS VÀ HIỆN MENU TÀI KHOẢN */}
                     <Space size="middle" className="user-action-group">
                         <Link to="/wishlist" className="user-action-icon"><HeartOutlined /></Link>
                         <Link to="/cart" className="user-action-icon">
@@ -93,7 +86,6 @@ const UserLayout = () => {
                         </Link>
 
                         {isAuthenticated ? (
-                            // Nếu đã đăng nhập: Hiển thị Dropdown "Xin chào..."
                             <Dropdown menu={profileMenu} placement="bottomRight" trigger={['click']}>
                                 <Button type="text" style={{ padding: 0 }}>
                                     <Space>
@@ -103,7 +95,6 @@ const UserLayout = () => {
                                 </Button>
                             </Dropdown>
                         ) : (
-                            // Nếu chưa đăng nhập: Hiển thị nút "Đăng nhập" (Link /login)
                             <Button type="primary" onClick={() => navigate('/login')}>
                                 Đăng nhập
                             </Button>

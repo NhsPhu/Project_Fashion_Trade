@@ -9,13 +9,20 @@ import java.util.Optional;
 
 @Repository
 public interface CartRepository extends JpaRepository<Cart, Long> {
-    
-    @EntityGraph(attributePaths = {"items", "items.productVariant", "items.productVariant.product"})
+
+    @EntityGraph(attributePaths = {
+            "items",
+            "items.variant",
+            "items.variant.product",
+            "items.variant.product.images"
+    })
     Optional<Cart> findByUserId(Long userId);
-    
-    @EntityGraph(attributePaths = {"items", "items.productVariant", "items.productVariant.product"})
+
+    @EntityGraph(attributePaths = {
+            "items",
+            "items.variant",
+            "items.variant.product",
+            "items.variant.product.images"
+    })
     Optional<Cart> findBySessionId(String sessionId);
-    
-    @EntityGraph(attributePaths = {"items", "items.productVariant", "items.productVariant.product"})
-    Optional<Cart> findById(Long id);
 }

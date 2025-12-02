@@ -1,4 +1,3 @@
-// src/pages/user/ProductDetailPage.js
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
@@ -14,7 +13,9 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const ProductDetailPage = () => {
-  const { id } = useParams(); // XÓA TYPE
+  // Lấy ID từ URL (Ví dụ: /products/1 -> id = "1")
+  const { id } = useParams();
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,14 +24,17 @@ const ProductDetailPage = () => {
   const { addItem } = useUserCart();
   const { isAuthenticated } = useAuth();
 
+  // Load sản phẩm từ API
   useEffect(() => {
     const loadProduct = async () => {
       if (!id) return;
       setLoading(true);
       setError(null);
       try {
+        console.log("Đang lấy sản phẩm với ID:", id); // Log để kiểm tra ID
         const data = await ProductCatalogService.getProductById(id);
         setProduct(data);
+        // Chọn sẵn biến thể đầu tiên nếu có
         if (data?.variants?.length > 0) {
           setSelectedVariantId(data.variants[0].id);
         }
@@ -38,7 +42,7 @@ const ProductDetailPage = () => {
         console.error('Lỗi load sản phẩm:', e);
         const status = e.response?.status;
         if (status === 404) setError('Sản phẩm không tồn tại.');
-        else if (status === 403) setError('Truy cập bị từ chối.');
+        else if (status === 403) setError('Truy cập bị từ chối (403). Kiểm tra lại quyền hoặc API.');
         else setError('Không thể tải sản phẩm. Vui lòng thử lại.');
       } finally {
         setLoading(false);
@@ -47,10 +51,12 @@ const ProductDetailPage = () => {
     loadProduct();
   }, [id]);
 
+  // Tìm biến thể đang được chọn
   const selectedVariant = useMemo(() => {
     return product?.variants?.find(v => v.id === selectedVariantId) ?? null;
   }, [product, selectedVariantId]);
 
+  // Xử lý thêm vào giỏ hàng
   const handleAddToCart = useCallback(async () => {
     if (!selectedVariant || selectedVariant.stockQuantity < quantity) {
       message.warning('Sản phẩm không đủ số lượng');
@@ -60,10 +66,12 @@ const ProductDetailPage = () => {
       await addItem({ variantId: selectedVariantId, quantity });
       message.success('Đã thêm vào giỏ hàng!');
     } catch (e) {
+      console.error(e);
       message.error('Không thể thêm vào giỏ');
     }
   }, [selectedVariant, selectedVariantId, quantity, addItem]);
 
+  // Xử lý yêu thích
   const handleFavorite = useCallback(async () => {
     if (!isAuthenticated) {
       message.warning('Vui lòng đăng nhập');
@@ -97,16 +105,20 @@ const ProductDetailPage = () => {
   return (
       <div style={{ padding: 24, background: '#f9f9f9' }}>
         <Row gutter={32}>
+          {/* Cột Trái: Ảnh sản phẩm */}
           <Col xs={24} lg={12}>
             <Card bordered={false}>
               <Image
                   width="100%"
+                  // Ưu tiên ảnh của biến thể, nếu không có thì lấy ảnh mặc định
                   src={selectedVariant?.images?.[0]?.url || product.defaultImage}
                   fallback="https://via.placeholder.com/500?text=No+Image"
                   style={{ borderRadius: 8, objectFit: 'cover' }}
               />
             </Card>
           </Col>
+
+          {/* Cột Phải: Thông tin chi tiết */}
           <Col xs={24} lg={12}>
             <Card bordered={false}>
               <Title level={2}>{product.name}</Title>
@@ -114,10 +126,13 @@ const ProductDetailPage = () => {
                 <Tag color="blue">{product.brand?.name || 'N/A'}</Tag>
                 <Tag color="green">{product.category?.name || 'N/A'}</Tag>
               </Space>
+
               <div style={{ fontSize: 24, fontWeight: 'bold', color: '#d4380d', margin: '16px 0' }}>
                 {(selectedVariant?.salePrice ?? selectedVariant?.price ?? 0).toLocaleString('vi-VN')} ₫
               </div>
+
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                {/* Chọn biến thể */}
                 <div>
                   <Text strong>Biến thể:</Text>
                   <Select
@@ -126,7 +141,7 @@ const ProductDetailPage = () => {
                       onChange={setSelectedVariantId}
                       placeholder="Chọn kích thước/màu sắc"
                   >
-                    {product.variants.map(v => (
+                    {product.variants && product.variants.map(v => (
                         <Option key={v.id} value={v.id} disabled={v.stockQuantity === 0}>
                           <Space>
                             {v.sku}
@@ -137,6 +152,8 @@ const ProductDetailPage = () => {
                     ))}
                   </Select>
                 </div>
+
+                {/* Chọn số lượng */}
                 <div>
                   <Text strong>Số lượng:</Text>
                   <InputNumber
@@ -151,6 +168,8 @@ const ProductDetailPage = () => {
                     (Còn {selectedVariant?.stockQuantity ?? 0})
                   </Text>
                 </div>
+
+                {/* Nút thao tác */}
                 <Space size="middle">
                   <Button
                       type="primary"

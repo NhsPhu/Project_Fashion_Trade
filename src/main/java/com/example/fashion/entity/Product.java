@@ -1,10 +1,11 @@
-// src/main/java/com/example/fashion/entity/Product.java
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import java.util.List;
+// 1. CHÚ Ý IMPORT SET
+import java.util.Set;
+import java.util.LinkedHashSet;
 
 @Entity
 @Table(name = "products")
@@ -47,8 +48,15 @@ public class Product {
     @JoinColumn(name = "brand_id")
     private Brand brand;
 
+    // 2. SỬA List -> Set (Dùng LinkedHashSet để giữ thứ tự sắp xếp)
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private List<ProductVariant> variants;
+    @Builder.Default
+    private Set<ProductVariant> variants = new LinkedHashSet<>();
+
+    // 3. SỬA List -> Set (Dùng LinkedHashSet để giữ thứ tự sắp xếp)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @Builder.Default
+    private Set<ProductImage> images = new LinkedHashSet<>();
 
     @Column(name = "created_at")
     @Builder.Default

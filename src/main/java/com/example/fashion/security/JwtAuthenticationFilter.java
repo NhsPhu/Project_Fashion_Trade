@@ -32,52 +32,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-        String method = request.getMethod();
+        try {
+            String jwt = getJwtFromRequest(request);
 
-        // BỎ QUA HOÀN TOÀN CÁC PUBLIC API
-        if (isPublicRequest(path, method)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        // CHỈ XỬ LÝ JWT NẾU KHÔNG PHẢI PUBLIC
-        String jwt = getJwtFromRequest(request);
-        if (StringUtils.hasText(jwt)) {
-            try {
-                if (tokenProvider.validateToken(jwt)) {
-                    String email = tokenProvider.getEmailFromJWT(jwt);
-                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
-
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
-            } catch (Exception e) {
-                // Token lỗi → bỏ qua, KHÔNG ném 403
+            // Thêm log để xem token nhận được
+            if (StringUtils.hasText(jwt)) {
+                System.out.println("DEBUG: Token nhận được từ request: " + jwt);
             }
+
+            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+                String email = tokenProvider.getEmailFromJWT(jwt);
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        } catch (Exception ex) {
+            logger.error("Could not set user authentication in security context", ex);
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private boolean isPublicRequest(String path, String method) {
-        // CORS preflight
-        if ("OPTIONS".equalsIgnoreCase(method)) return true;
-
-        // Auth APIs
-        if (path.startsWith("/api/v1/auth/") || path.startsWith("/api/v1/admin/auth/")) return true;
-
-        // Public GET APIs
-        if ("GET".equalsIgnoreCase(method)) {
-            return path.startsWith("/api/v1/public/products/") ||
-                    path.startsWith("/api/v1/products/") ||
-                    path.startsWith("/api/v1/categories/") ||
-                    path.startsWith("/api/v1/brands/");
-        }
-
-        return false;
     }
 
     private String getJwtFromRequest(HttpServletRequest request) {

@@ -1,15 +1,12 @@
-// src/main/java/com/example/fashion/service/ReportService.java
 package com.example.fashion.service;
 
 import com.example.fashion.dto.ReportResponseDTO;
 import com.example.fashion.entity.Order;
-import com.example.fashion.entity.OrderItem;
 import com.example.fashion.entity.Product;
-import com.example.fashion.entity.User;
 import com.example.fashion.repository.*;
-        import lombok.RequiredArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
-        import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-        import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,13 +30,17 @@ public class ReportService {
     private final ProductRepository productRepository;
 
     public ReportResponseDTO.RevenueReport getRevenueReport(String period, LocalDateTime start, LocalDateTime end) {
-        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
+        // --- ĐÃ SỬA: findByCreatedAtBetween -> findByOrderDateBetween ---
+        List<Order> orders = orderRepository.findByOrderDateBetween(start, end);
 
         Map<LocalDate, BigDecimal> revenueMap = new HashMap<>();
         Map<LocalDate, Long> orderCountMap = new HashMap<>();
 
         for (Order order : orders) {
-            LocalDate date = order.getCreatedAt().toLocalDate();
+            // --- ĐÃ SỬA: order.getCreatedAt() -> order.getOrderDate() ---
+            if (order.getOrderDate() == null) continue;
+            LocalDate date = order.getOrderDate().toLocalDate();
+
             BigDecimal amount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
             revenueMap.merge(date, amount, BigDecimal::add);
             orderCountMap.merge(date, 1L, Long::sum);
@@ -65,11 +66,11 @@ public class ReportService {
     }
 
     public ReportResponseDTO.OrderReport getOrderReport(LocalDateTime start, LocalDateTime end) {
-        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
+        // --- ĐÃ SỬA: findByCreatedAtBetween -> findByOrderDateBetween ---
+        List<Order> orders = orderRepository.findByOrderDateBetween(start, end);
 
         return ReportResponseDTO.OrderReport.builder()
                 .total((long) orders.size())
-                // SỬA: Hỗ trợ nhiều trạng thái hoàn thành
                 .completed(orders.stream()
                         .filter(o -> Set.of("PAID", "SHIPPED", "DELIVERED", "DONE", "COMPLETED").contains(o.getOrderStatus()))
                         .count())
@@ -123,7 +124,9 @@ public class ReportService {
 
     public ReportResponseDTO.CustomerReport getCustomerReport(LocalDateTime start, LocalDateTime end) {
         long newCustomers = userRepository.countByCreatedAtBetween(start, end);
-        long totalOrders = orderRepository.countByCreatedAtBetween(start, end);
+
+        // --- ĐÃ SỬA: countByCreatedAtBetween -> countByOrderDateBetween ---
+        long totalOrders = orderRepository.countByOrderDateBetween(start, end);
         long totalUsers = userRepository.count();
 
         double conversionRate = totalUsers > 0 ? (double) totalOrders / totalUsers * 100 : 0;
@@ -136,7 +139,6 @@ public class ReportService {
                 .build();
     }
 
-    // =================== ĐÃ SỬA: THÊM XỬ LÝ TYPE = FULL ===================
     public byte[] generateExcelReport(String type, LocalDateTime start, LocalDateTime end) {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Báo cáo");
@@ -149,11 +151,9 @@ public class ReportService {
             }
             rowNum++;
 
-            // ⭐ THÊM: Xử lý type = full
             if ("full".equalsIgnoreCase(type)) {
                 generateFullReport(workbook, start, end);
             }
-            // Giữ nguyên: chỉ xử lý revenue
             else if ("revenue".equalsIgnoreCase(type)) {
                 ReportResponseDTO.RevenueReport report = getRevenueReport("day", start, end);
                 Row title = sheet.createRow(rowNum++);
@@ -188,7 +188,6 @@ public class ReportService {
         }
     }
 
-    // ⭐ THÊM: Hàm tạo báo cáo FULL (5 sheet riêng biệt)
     private void generateFullReport(Workbook workbook, LocalDateTime start, LocalDateTime end) {
         generateRevenueSheet(workbook, start, end);
         generateOrderSheet(workbook, start, end);

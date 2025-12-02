@@ -21,11 +21,7 @@ public class AdminOrderController {
         this.orderService = orderService;
     }
 
-    /**
-     * API Lấy danh sách đơn hàng (có phân trang)
-     * Được bảo vệ (yêu cầu role ORDER_MANAGER hoặc SUPER_ADMIN)
-     * Ví dụ: /api/v1/admin/orders?page=0&size=10&sort=createdAt,desc
-     */
+
     @GetMapping
     public ResponseEntity<Page<OrderResponseDTO>> getAllOrders(
             @RequestParam(defaultValue = "0") int page,
@@ -41,9 +37,6 @@ public class AdminOrderController {
         return ResponseEntity.ok(orderPage);
     }
 
-    /**
-     * API Lấy chi tiết một đơn hàng
-     */
     @GetMapping("/{id}")
     public ResponseEntity<?> getOrderById(@PathVariable Long id) {
         try {
@@ -54,9 +47,6 @@ public class AdminOrderController {
         }
     }
 
-    /**
-     * API Cập nhật trạng thái đơn hàng (Mục 4.5)
-     */
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable Long id,

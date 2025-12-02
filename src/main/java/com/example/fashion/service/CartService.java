@@ -9,6 +9,7 @@ import com.example.fashion.repository.CartItemRepository;
 import com.example.fashion.repository.CartRepository;
 import com.example.fashion.repository.ProductVariantRepository;
 import com.example.fashion.repository.UserRepository;
+import jakarta.persistence.EntityManager; // ✅ THÊM IMPORT NÀY
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,45 +23,38 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductVariantRepository productVariantRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager; // ✅ KHAI BÁO ENTITY MANAGER
 
     public CartService(CartRepository cartRepository,
                        CartItemRepository cartItemRepository,
                        ProductVariantRepository productVariantRepository,
-                       UserRepository userRepository) {
+                       UserRepository userRepository,
+                       EntityManager entityManager) { // ✅ INJECT VÀO CONSTRUCTOR
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
         this.productVariantRepository = productVariantRepository;
         this.userRepository = userRepository;
+        this.entityManager = entityManager;
     }
 
-    /**
-     * LẤY GIỎ HÀNG – CHỈ ĐỌC (readOnly = true)
-     */
     @Transactional(readOnly = true)
     public CartResponseDTO getCart(Long userId, String sessionId) {
-        Cart cart = resolveCart(userId, sessionId, false); // ← KHÔNG TẠO MỚI
+        Cart cart = resolveCart(userId, sessionId, false);
         if (cart == null) {
             return CartResponseDTO.empty();
         }
-        // Force load items
-        cart.getItems().size();
+        cart.getItems().size(); // Force load
         return CartResponseDTO.fromCart(cart);
     }
 
-    /**
-     * ĐẢM BẢO GIỎ HÀNG TỒN TẠI (có thể tạo mới) – GHI DỮ LIỆU
-     */
     @Transactional
     public Cart ensureCart(Long userId, String sessionId) {
         return resolveCart(userId, sessionId, true);
     }
 
-    /**
-     * Thêm sản phẩm vào giỏ hàng.
-     */
     @Transactional
     public CartResponseDTO addItem(Long userId, String sessionId, CartItemRequestDTO request) {
-        Cart cart = ensureCart(userId, sessionId); // ← Đảm bảo có cart
+        Cart cart = ensureCart(userId, sessionId);
         ProductVariant variant = productVariantRepository.findById(request.getVariantId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy biến thể sản phẩm"));
 
@@ -68,11 +62,11 @@ public class CartService {
             throw new RuntimeException("Số lượng vượt quá tồn kho");
         }
 
-        CartItem cartItem = cartItemRepository.findByCartIdAndProductVariantId(cart.getId(), variant.getId())
+        CartItem cartItem = cartItemRepository.findByCartIdAndVariantId(cart.getId(), variant.getId())
                 .orElseGet(() -> {
                     CartItem item = new CartItem();
                     item.setCart(cart);
-                    item.setProductVariant(variant);
+                    item.setVariant(variant);
                     item.setQuantity(0);
                     item.setPriceAtAdd(variant.getSalePrice() != null && variant.getSalePrice().compareTo(BigDecimal.ZERO) > 0
                             ? variant.getSalePrice()
@@ -88,12 +82,13 @@ public class CartService {
         cartItem.setQuantity(newQuantity);
         cartItemRepository.save(cartItem);
 
-        return CartResponseDTO.fromCart(cartRepository.findById(cart.getId()).orElseThrow());
+        // ✅ QUAN TRỌNG: Ép Hibernate lưu xuống DB và tải lại Cart mới nhất
+        entityManager.flush();
+        entityManager.refresh(cart);
+
+        return CartResponseDTO.fromCart(cart);
     }
 
-    /**
-     * Cập nhật số lượng.
-     */
     @Transactional
     public CartResponseDTO updateItem(Long userId, String sessionId, Long itemId, Integer quantity) {
         Cart cart = ensureCart(userId, sessionId);
@@ -107,7 +102,7 @@ public class CartService {
         if (quantity <= 0) {
             cartItemRepository.delete(cartItem);
         } else {
-            ProductVariant variant = cartItem.getProductVariant();
+            ProductVariant variant = cartItem.getVariant();
             if (variant.getStockQuantity() != null && quantity > variant.getStockQuantity()) {
                 throw new RuntimeException("Số lượng vượt quá tồn kho");
             }
@@ -115,12 +110,13 @@ public class CartService {
             cartItemRepository.save(cartItem);
         }
 
-        return CartResponseDTO.fromCart(cartRepository.findById(cart.getId()).orElseThrow());
+        // ✅ Refresh để đảm bảo tổng tiền/số lượng cập nhật đúng
+        entityManager.flush();
+        entityManager.refresh(cart);
+
+        return CartResponseDTO.fromCart(cart);
     }
 
-    /**
-     * Xóa một sản phẩm khỏi giỏ hàng.
-     */
     @Transactional
     public CartResponseDTO removeItem(Long userId, String sessionId, Long itemId) {
         Cart cart = ensureCart(userId, sessionId);
@@ -132,12 +128,14 @@ public class CartService {
         }
 
         cartItemRepository.delete(cartItem);
-        return CartResponseDTO.fromCart(cartRepository.findById(cart.getId()).orElseThrow());
+
+        // ✅ Refresh để list items trong cart biến mất item vừa xóa
+        entityManager.flush();
+        entityManager.refresh(cart);
+
+        return CartResponseDTO.fromCart(cart);
     }
 
-    /**
-     * Xóa toàn bộ giỏ hàng.
-     */
     @Transactional
     public void clearCart(Long userId, String sessionId) {
         Cart cart = resolveCart(userId, sessionId, false);
@@ -147,9 +145,6 @@ public class CartService {
         }
     }
 
-    /**
-     * Resolve cart: ưu tiên userId → sessionId → tạo mới nếu cần
-     */
     private Cart resolveCart(Long userId, String sessionId, boolean createIfMissing) {
         Cart cart = null;
 

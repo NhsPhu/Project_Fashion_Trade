@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;             // MỚI
+import java.util.LinkedHashSet;   // MỚI
 
 @Service
 @RequiredArgsConstructor
@@ -36,8 +38,11 @@ public class ProductService {
                 request.getStatus(), request.getDefaultImage(), category, brand,
                 request.getSeoMetaTitle(), request.getSeoMetaDesc());
 
-        List<ProductVariant> variants = mapVariantDTOsToEntities(product, request.getVariants());
-        product.setVariants(variants);
+        // Lấy danh sách biến thể (List)
+        List<ProductVariant> variantsList = mapVariantDTOsToEntities(product, request.getVariants());
+
+        // --- SỬA LỖI Ở ĐÂY: Chuyển List -> Set ---
+        product.setVariants(new LinkedHashSet<>(variantsList));
 
         product = productRepository.save(product);
         return ProductResponseDTO.fromProduct(product);
@@ -59,9 +64,14 @@ public class ProductService {
                 request.getStatus(), request.getDefaultImage(), category, brand,
                 request.getSeoMetaTitle(), request.getSeoMetaDesc());
 
+        // Xóa biến thể cũ
         productVariantRepository.deleteAll(product.getVariants());
-        List<ProductVariant> variants = mapVariantDTOsToEntities(product, request.getVariants());
-        product.setVariants(variants);
+
+        // Tạo biến thể mới (List)
+        List<ProductVariant> variantsList = mapVariantDTOsToEntities(product, request.getVariants());
+
+        // --- SỬA LỖI Ở ĐÂY: Chuyển List -> Set ---
+        product.setVariants(new LinkedHashSet<>(variantsList));
 
         product = productRepository.save(product);
         return ProductResponseDTO.fromProduct(product);
@@ -76,7 +86,7 @@ public class ProductService {
         productRepository.deleteById(id);
     }
 
-    // GET ALL - SỬA: Sử dụng query load variants
+    // GET ALL
     public Page<ProductResponseDTO> getAllProducts(Pageable pageable) {
         return productRepository.findAllWithVariants(pageable)
                 .map(ProductResponseDTO::fromProduct);

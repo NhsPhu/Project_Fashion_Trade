@@ -1,4 +1,3 @@
-// src/main/java/com/example/fashion/dto/OrderResponseDTO.java
 package com.example.fashion.dto;
 
 import com.example.fashion.entity.Order;
@@ -16,13 +15,10 @@ import java.util.stream.Collectors;
 public class OrderResponseDTO {
     private Long id;
     private String orderNo;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private LocalDateTime orderDate; // Đổi từ createdAt -> orderDate cho khớp
 
     private Long userId;
     private String userEmail;
-
-    private String customerName; // Từ customer_name (DB) → ưu tiên, nếu null thì dùng shipping_name
 
     private BigDecimal totalAmount;
     private BigDecimal shippingFee;
@@ -30,21 +26,22 @@ public class OrderResponseDTO {
     private String payStatus;
     private String orderStatus;
     private String paymentMethod;
-    private String trackingNumber;
+
     private String shippingName;
     private String shippingPhone;
-    private String shippingAddressLine;
+    private String shippingAddress;
     private String shippingCity;
-    private String shippingDistrict;
-    private String shippingProvince;
+    private String note;
+
     private Set<OrderItemResponseDTO> items;
 
     public static OrderResponseDTO fromOrder(Order order) {
         OrderResponseDTO dto = new OrderResponseDTO();
         dto.setId(order.getId());
         dto.setOrderNo(order.getOrderNo());
-        dto.setCreatedAt(order.getCreatedAt());
-        dto.setUpdatedAt(order.getUpdatedAt());
+
+        // Sửa: dùng getOrderDate() thay vì getCreatedAt()
+        dto.setOrderDate(order.getOrderDate());
 
         try {
             if (order.getUser() != null) {
@@ -56,30 +53,23 @@ public class OrderResponseDTO {
             dto.setUserEmail("[Người dùng đã bị xóa]");
         }
 
-        // SỬA: Ưu tiên customer_name → shipping_name → "Khách lẻ"
-        String name = order.getCustomerName();
-        if (name == null || name.trim().isEmpty()) {
-            name = order.getShippingName();
-        }
-        dto.setCustomerName(name != null && !name.trim().isEmpty() ? name.trim() : "Khách lẻ");
-
         dto.setTotalAmount(order.getTotalAmount());
         dto.setShippingFee(order.getShippingFee());
         dto.setDiscountAmount(order.getDiscountAmount());
         dto.setPayStatus(order.getPayStatus());
         dto.setOrderStatus(order.getOrderStatus());
         dto.setPaymentMethod(order.getPaymentMethod());
-        dto.setTrackingNumber(order.getTrackingNumber());
 
+        // Map các trường thông tin giao hàng
         dto.setShippingName(order.getShippingName());
         dto.setShippingPhone(order.getShippingPhone());
-        dto.setShippingAddressLine(order.getShippingAddressLine());
+        dto.setShippingAddress(order.getShippingAddress());
         dto.setShippingCity(order.getShippingCity());
-        dto.setShippingDistrict(order.getShippingDistrict());
-        dto.setShippingProvince(order.getShippingProvince());
+        dto.setNote(order.getNote());
 
-        if (order.getItems() != null) {
-            dto.setItems(order.getItems().stream()
+        // Sửa: getItems() -> getOrderItems() (vì trong Order mình đặt là orderItems)
+        if (order.getOrderItems() != null) {
+            dto.setItems(order.getOrderItems().stream()
                     .map(OrderItemResponseDTO::fromOrderItem)
                     .collect(Collectors.toSet()));
         }

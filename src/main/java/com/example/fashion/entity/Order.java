@@ -4,57 +4,32 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "orders")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder // THÊM @Builder
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Order {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "order_no")
+    @Column(name = "order_no", unique = true)
     private String orderNo;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @Column(name = "customer_name")
-    private String customerName;
-
-    @Column(name = "total_amount", precision = 15, scale = 2)
-    private BigDecimal totalAmount;
-
-    @Column(name = "shipping_fee", precision = 15, scale = 2)
-    @Builder.Default
-    private BigDecimal shippingFee = BigDecimal.ZERO;
-
-    @Column(name = "discount_amount", precision = 15, scale = 2)
-    @Builder.Default
-    private BigDecimal discountAmount = BigDecimal.ZERO;
-
-    @Column(name = "final_amount", precision = 15, scale = 2)
-    private BigDecimal finalAmount;
-
-    @Column(name = "pay_status")
-    private String payStatus;
+    @Column(name = "order_date")
+    private LocalDateTime orderDate;
 
     @Column(name = "order_status")
     private String orderStatus;
 
+    @Column(name = "pay_status")
+    private String payStatus;
+
     @Column(name = "payment_method")
     private String paymentMethod;
-
-    @Column(name = "tracking_number")
-    private String trackingNumber;
 
     @Column(name = "shipping_name")
     private String shippingName;
@@ -62,29 +37,28 @@ public class Order {
     @Column(name = "shipping_phone")
     private String shippingPhone;
 
-    @Column(name = "shipping_address_line")
-    private String shippingAddressLine;
+    @Column(name = "shipping_address")
+    private String shippingAddress;
 
     @Column(name = "shipping_city")
     private String shippingCity;
 
-    @Column(name = "shipping_district")
-    private String shippingDistrict;
+    @Column(name = "note")
+    private String note;
 
-    @Column(name = "shipping_province")
-    private String shippingProvince;
+    @Column(name = "total_amount")
+    private BigDecimal totalAmount;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    private Set<OrderItem> items;
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
+    @Column(name = "discount_amount")
+    private BigDecimal discountAmount;
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<OrderItem> orderItems = new HashSet<>();
 }
