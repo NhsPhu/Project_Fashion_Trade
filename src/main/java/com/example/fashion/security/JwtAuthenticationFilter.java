@@ -16,6 +16,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -35,13 +38,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         String method = request.getMethod();
 
-        // BỎ QUA HOÀN TOÀN CÁC PUBLIC API
         if (isPublicRequest(path, method)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // CHỈ XỬ LÝ JWT NẾU KHÔNG PHẢI PUBLIC
         String jwt = getJwtFromRequest(request);
         if (StringUtils.hasText(jwt)) {
             try {
@@ -49,8 +50,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String email = tokenProvider.getEmailFromJWT(jwt);
                     UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
+                    // THÊM MỚI: LẤY DANH SÁCH KHO TỪ DB
+                    List<Long> allowedWarehouses = customUserDetailsService.getAllowedWarehouseIdsByEmail(email);
+
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                    // Nhét allowedWarehouses vào details để JwtTokenProvider đọc được
+                    Map<String, Object> details = new HashMap<>();
+                    details.put("allowedWarehouses", allowedWarehouses);
+                    authentication.setDetails(details);
+
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
@@ -63,20 +73,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicRequest(String path, String method) {
-        // CORS preflight
         if ("OPTIONS".equalsIgnoreCase(method)) return true;
-
-        // Auth APIs
         if (path.startsWith("/api/v1/auth/") || path.startsWith("/api/v1/admin/auth/")) return true;
 
-        // Public GET APIs
         if ("GET".equalsIgnoreCase(method)) {
             return path.startsWith("/api/v1/public/products/") ||
                     path.startsWith("/api/v1/products/") ||
                     path.startsWith("/api/v1/categories/") ||
                     path.startsWith("/api/v1/brands/");
         }
-
         return false;
     }
 

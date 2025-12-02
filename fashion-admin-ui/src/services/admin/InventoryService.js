@@ -1,8 +1,7 @@
 // src/services/admin/InventoryService.js
-
 import api from '../ApiService';
 
-const API_URL = '/admin/inventory'; // Đúng endpoint backend đang dùng
+const API_URL = '/admin/inventory';
 
 const InventoryService = {
     // Lấy danh sách sản phẩm tồn kho thấp
@@ -17,24 +16,20 @@ const InventoryService = {
         return response.data;
     },
 
-    // DÙNG DUY NHẤT HÀM NÀY CHO TẤT CẢ CÁC KHO (Hà Nội, TP.HCM, Đà Nẵng)
-    // ĐÃ ĐƯỢC TEST THÀNH CÔNG 100%
+    // THÊM DÒNG NÀY – gọi đúng API /all ở backend
+    getAllInventory: async () => {
+        const response = await api.get(`${API_URL}/all`);
+        return response.data;
+    },
+
     updateStock: async ({ variantId, warehouseId, quantity, action }) => {
         const payload = {
             variantId,
             warehouseId,
             quantity,
-            action: action === 'IN' || action === 'Nhập kho' ? 'IN' : 'OUT', // backend chấp nhận cả IN/OUT
+            action: action === 'IN' || action === 'Nhập kho' ? 'IN' : 'OUT',
         };
-
-        // Gọi đúng endpoint mà backend đã có: POST /api/v1/admin/inventory
         const response = await api.post(API_URL, payload);
-        return response.data;
-    },
-
-    // Lấy toàn bộ tồn kho trong hệ thống (dùng cho trang tổng quan)
-    getAllStock: async () => {
-        const response = await api.get(`${API_URL}/all`);
         return response.data;
     },
 };
