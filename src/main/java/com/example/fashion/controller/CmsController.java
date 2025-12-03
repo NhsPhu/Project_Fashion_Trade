@@ -1,9 +1,9 @@
 // src/main/java/com/example/fashion/controller/admin/CmsController.java
-package com.example.fashion.controller;
+package com.example.fashion.controller; // giữ package cũ
 
+import com.example.fashion.dto.CMSResponseDTO;
 import com.example.fashion.entity.StaticPage;
 import com.example.fashion.repository.StaticPageRepository;
-import com.example.fashion.dto.CMSResponseDTO; // Đảm bảo import đúng
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,13 +12,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/admin/cms/pages")
+@RequestMapping("/api/v1/admin/cms/pages") // giữ nguyên cho admin
 @PreAuthorize("hasAnyAuthority('CMS_PAGE_WRITE', 'ROLE_SUPER_ADMIN')")
 public class CmsController {
 
     @Autowired
     private StaticPageRepository repository;
 
+    // ==================== ADMIN ENDPOINTS ====================
     @GetMapping
     public List<StaticPage> getAll() {
         return repository.findAll();
@@ -55,27 +56,28 @@ public class CmsController {
         return ResponseEntity.notFound().build();
     }
 
-    // API PUBLIC CHO NGƯỜI DÙNG CUỐI - KHÔNG CẦN ĐĂNG NHẬP
+    // ==================== PUBLIC ENDPOINT (MỚI) ====================
+    // Đường dẫn public riêng, KHÔNG bị prefix admin
     @GetMapping("/api/v1/pages/{slug}")
-    @PreAuthorize("permitAll()") // Cho mọi người truy cập
+    @PreAuthorize("permitAll()") // Cho mọi người vào
+    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<CMSResponseDTO> getPublicPage(@PathVariable String slug) {
         return repository.findBySlug(slug)
                 .filter(StaticPage::isPublished)
-                .map(this::toResponseDTO)
+                .map(this::toDTO)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Mapper helper
-    private CMSResponseDTO toResponseDTO(StaticPage entity) {
+    private CMSResponseDTO toDTO(StaticPage p) {
         return CMSResponseDTO.builder()
-                .id(entity.getId())
-                .title(entity.getTitle())
-                .slug(entity.getSlug())
-                .content(entity.getContent())
-                .metaTitle(entity.getMetaTitle())
-                .metaDescription(entity.getMetaDescription())
-                .published(entity.isPublished())
+                .id(p.getId())
+                .title(p.getTitle())
+                .slug(p.getSlug())
+                .content(p.getContent())
+                .metaTitle(p.getMetaTitle())
+                .metaDescription(p.getMetaDescription())
+                .published(p.isPublished())
                 .build();
     }
 }
