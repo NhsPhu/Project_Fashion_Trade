@@ -3,6 +3,7 @@ package com.example.fashion.controller;
 
 import com.example.fashion.entity.StaticPage;
 import com.example.fashion.repository.StaticPageRepository;
+import com.example.fashion.dto.CMSResponseDTO; // Đảm bảo import đúng
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,8 +36,8 @@ public class CmsController {
                     existing.setSlug(page.getSlug());
                     existing.setTitle(page.getTitle());
                     existing.setContent(page.getContent());
-                    existing.setMetaTitle(page.getMetaTitle());           // ĐÃ SỬA
-                    existing.setMetaDescription(page.getMetaDescription()); // ĐÃ SỬA
+                    existing.setMetaTitle(page.getMetaTitle());
+                    existing.setMetaDescription(page.getMetaDescription());
                     existing.setMetaKeywords(page.getMetaKeywords());
                     existing.setOgImage(page.getOgImage());
                     existing.setPublished(page.isPublished());
@@ -52,5 +53,29 @@ public class CmsController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // API PUBLIC CHO NGƯỜI DÙNG CUỐI - KHÔNG CẦN ĐĂNG NHẬP
+    @GetMapping("/api/v1/pages/{slug}")
+    @PreAuthorize("permitAll()") // Cho mọi người truy cập
+    public ResponseEntity<CMSResponseDTO> getPublicPage(@PathVariable String slug) {
+        return repository.findBySlug(slug)
+                .filter(StaticPage::isPublished)
+                .map(this::toResponseDTO)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Mapper helper
+    private CMSResponseDTO toResponseDTO(StaticPage entity) {
+        return CMSResponseDTO.builder()
+                .id(entity.getId())
+                .title(entity.getTitle())
+                .slug(entity.getSlug())
+                .content(entity.getContent())
+                .metaTitle(entity.getMetaTitle())
+                .metaDescription(entity.getMetaDescription())
+                .published(entity.isPublished())
+                .build();
     }
 }
