@@ -1,7 +1,9 @@
 // src/main/java/com/example/fashion/dto/ReviewResponseDTO.java
+
 package com.example.fashion.dto;
 
 import com.example.fashion.entity.Review;
+import com.example.fashion.enums.ReviewStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,11 +19,12 @@ public class ReviewResponseDTO {
     private Integer rating;
     private String title;
     private String body;
-    private String status;          // ← Đây là String, không phải Enum
+    private String status;                    // Vẫn là String để frontend dễ dùng
     private LocalDateTime createdAt;
 
     public static ReviewResponseDTO fromReview(Review review) {
         ReviewResponseDTO dto = new ReviewResponseDTO();
+
         dto.setId(review.getId());
 
         if (review.getProduct() != null) {
@@ -39,10 +42,14 @@ public class ReviewResponseDTO {
         dto.setTitle(review.getTitle());
         dto.setBody(review.getBody());
 
-        // ĐÃ SỬA DỨT ĐIỂM: status là String → KHÔNG DÙNG .name() NỮA!
-        dto.setStatus(review.getStatus());   // ← Chỉ cần thế này là xong!
+        // PHẢI DÙNG .name() – không có cách nào khác!
+        // Vì entity dùng enum, DTO dùng String
+        dto.setStatus(review.getStatus() != null
+                ? review.getStatus().name()
+                : "PENDING");
 
         dto.setCreatedAt(review.getCreatedAt());
+
         return dto;
     }
 }

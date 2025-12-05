@@ -1,57 +1,60 @@
+// src/main/java/com/example/fashion/entity/Review.java
+
 package com.example.fashion.entity;
 
+import com.example.fashion.enums.ReviewStatus;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "reviews")
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor          // JPA yêu cầu
+@AllArgsConstructor         // Tiện test
+@ToString(exclude = {"product", "user"})
 public class Review {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Mối quan hệ: Nhiều Đánh giá thuộc 1 Sản phẩm
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    // Mối quan hệ: Nhiều Đánh giá thuộc 1 User
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "rating", nullable = false)
-    private Integer rating; // Điểm (ví dụ: 1 đến 5) [cite: 122]
+    private Integer rating;
 
     @Column(name = "title", length = 255)
     private String title;
 
     @Column(name = "body", columnDefinition = "TEXT")
-    private String body; // Nội dung bình luận
+    private String body;
 
-    // Trạng thái: "Pending", "Approved", "Rejected"
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 50)
-    private String status;
+    private ReviewStatus status;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    // FIX LỖI @Builder: giữ giá trị mặc định khi dùng builder()
+    @Builder.Default
     @Column(name = "approved")
     private boolean approved = false;
 
+    @Builder.Default
     @Column(name = "hidden")
     private boolean hidden = false;
 
-    @Column(name = "admin_reply")
+    @Column(name = "admin_reply", columnDefinition = "TEXT")
     private String adminReply;
 
     @Column(name = "reviewed_by")
@@ -59,4 +62,9 @@ public class Review {
 
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }
