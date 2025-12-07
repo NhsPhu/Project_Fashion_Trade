@@ -1,6 +1,7 @@
 // src/main/java/com/example/fashion/controller/admin/CmsController.java
-package com.example.fashion.controller;
+package com.example.fashion.controller; // giữ package cũ
 
+import com.example.fashion.dto.CMSResponseDTO;
 import com.example.fashion.entity.StaticPage;
 import com.example.fashion.repository.StaticPageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,13 +12,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/admin/cms/pages")
+@RequestMapping("/api/v1/admin/cms/pages") // giữ nguyên cho admin
 @PreAuthorize("hasAnyAuthority('CMS_PAGE_WRITE', 'ROLE_SUPER_ADMIN')")
 public class CmsController {
 
     @Autowired
     private StaticPageRepository repository;
 
+    // ==================== ADMIN ENDPOINTS ====================
     @GetMapping
     public List<StaticPage> getAll() {
         return repository.findAll();
@@ -35,8 +37,8 @@ public class CmsController {
                     existing.setSlug(page.getSlug());
                     existing.setTitle(page.getTitle());
                     existing.setContent(page.getContent());
-                    existing.setMetaTitle(page.getMetaTitle());           // ĐÃ SỬA
-                    existing.setMetaDescription(page.getMetaDescription()); // ĐÃ SỬA
+                    existing.setMetaTitle(page.getMetaTitle());
+                    existing.setMetaDescription(page.getMetaDescription());
                     existing.setMetaKeywords(page.getMetaKeywords());
                     existing.setOgImage(page.getOgImage());
                     existing.setPublished(page.isPublished());
@@ -52,5 +54,30 @@ public class CmsController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // ==================== PUBLIC ENDPOINT (MỚI) ====================
+    // Đường dẫn public riêng, KHÔNG bị prefix admin
+    @GetMapping("/api/v1/pages/{slug}")
+    @PreAuthorize("permitAll()") // Cho mọi người vào
+    @CrossOrigin(origins = "http://localhost:3000")
+    public ResponseEntity<CMSResponseDTO> getPublicPage(@PathVariable String slug) {
+        return repository.findBySlug(slug)
+                .filter(StaticPage::isPublished)
+                .map(this::toDTO)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    private CMSResponseDTO toDTO(StaticPage p) {
+        return CMSResponseDTO.builder()
+                .id(p.getId())
+                .title(p.getTitle())
+                .slug(p.getSlug())
+                .content(p.getContent())
+                .metaTitle(p.getMetaTitle())
+                .metaDescription(p.getMetaDescription())
+                .published(p.isPublished())
+                .build();
     }
 }
