@@ -18,6 +18,12 @@ public class Brand {
     @Column(name = "name", nullable = false, unique = true, length = 100)
     private String name;
 
+    @Column(name = "description", length = 255)
+    private String description;
+
+    @Column(name = "logo_url", length = 255)
+    private String logoUrl;
+
     @Column(name = "slug", unique = true, length = 150)
     private String slug;
 

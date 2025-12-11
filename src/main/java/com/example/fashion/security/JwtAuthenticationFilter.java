@@ -1,6 +1,5 @@
 package com.example.fashion.security;
 
-
 import com.example.fashion.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -31,44 +30,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-            // 1. Lấy JWT từ request
             String jwt = getJwtFromRequest(request);
 
-            // 2. Xác thực token
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
+            if (StringUtils.hasText(jwt)) {
+                // --- DEBUG LOG START ---
+                System.out.println("🔍 [FILTER] Tìm thấy Token: " + jwt.substring(0, 15) + "...");
 
-                // 3. Lấy email (username) từ token
-                String email = tokenProvider.getEmailFromJWT(jwt);
+                boolean isValid = tokenProvider.validateToken(jwt);
+                System.out.println("🔍 [FILTER] Token Valid? " + isValid);
 
-                // 4. Tải thông tin user (bao gồm cả roles)
-                UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+                if (isValid) {
+                    String email = tokenProvider.getEmailFromJWT(jwt);
+                    System.out.println("🔍 [FILTER] Email từ Token: " + email);
 
-                // 5. Tạo đối tượng xác thực
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
+                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
 
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    // KIỂM TRA QUYỀN THỰC TẾ
+                    System.out.println("🔍 [FILTER] User tải được: " + userDetails.getUsername());
+                    System.out.println("🔍 [FILTER] Quyền (Authorities): " + userDetails.getAuthorities());
 
-                // 6. Thiết lập xác thực cho SecurityContext
-                // (Báo cho Spring Security biết user này đã đăng nhập)
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    System.out.println("✅ [FILTER] Đã set Authentication thành công!");
+                }
+            } else {
+                // System.out.println("⚠️ [FILTER] Không thấy Token trong request này.");
             }
         } catch (Exception ex) {
-            // Ghi log (ví dụ: logger.error("...", ex))
-            System.out.println("Không thể thiết lập xác thực người dùng: " + ex.getMessage());
+            System.err.println("❌ [FILTER ERROR] Lỗi nghiêm trọng: " + ex.getMessage());
+            ex.printStackTrace(); // In chi tiết lỗi ra để sửa
         }
 
-        // 7. Chuyển request/response cho filter tiếp theo
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * Tiện ích trích xuất Token từ "Authorization: Bearer <token>"
-     */
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // Bỏ "Bearer "
+            return bearerToken.substring(7);
         }
         return null;
     }

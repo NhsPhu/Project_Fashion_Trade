@@ -1,18 +1,15 @@
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "order_items")
-@Getter // <-- Đảm bảo bạn có @Getter
-@Setter // <-- Đảm bảo bạn có @Setter
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder // THÊM @Builder
 public class OrderItem {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -21,26 +18,17 @@ public class OrderItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "variant_id", nullable = false)
-    private ProductVariant productVariant;
+    private ProductVariant variant;
 
-    // ========== THÊM 2 TRƯỜNG BỊ THIẾU ==========
-
-    // Lưu lại tên sản phẩm (từ productVariant.getProduct().getName())
     @Column(name = "product_name")
-    private String productName; // <-- @Getter sẽ tạo getProductName()
-
-    // Lưu lại SKU (từ productVariant.getSku())
-    @Column(name = "variant_sku")
-    private String variantSku; // <-- @Getter sẽ tạo getVariantSku()
-
-    // ===========================================
-
-    @Column(name = "unit_price", precision = 10, scale = 2, nullable = false)
-    private BigDecimal unitPrice;
+    private String productName;
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "subtotal", precision = 10, scale = 2, nullable = false)
-    private BigDecimal subtotal; // (unitPrice * quantity)
+    @Column(name = "unit_price", precision = 15, scale = 2, nullable = false)
+    private BigDecimal unitPrice;
+
+    @Column(name = "subtotal", precision = 15, scale = 2, nullable = false)
+    private BigDecimal subtotal;
 }

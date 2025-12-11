@@ -1,50 +1,62 @@
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "coupons")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder // Sửa lỗi .builder()
 public class Coupon {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "code", unique = true, nullable = false, length = 50)
-    private String code; // Mã giảm giá
+    @Column(unique = true, nullable = false)
+    private String code;
 
-    // Loại: "percent" (phần trăm), "fixed" (tiền cố định), "free_shipping"
-    @Column(name = "type", length = 50, nullable = false)
     private String type;
 
-    // Giá trị (ví dụ: 10 cho 10%, hoặc 100000 cho 100.000 VNĐ)
-    @Column(name = "value", precision = 10, scale = 2, nullable = false)
     private BigDecimal value;
 
-    // Đơn hàng tối thiểu để áp dụng
-    @Column(name = "min_order_amount", precision = 10, scale = 2)
-    private BigDecimal minOrderAmount;
+    // Sửa tên biến: minOrderAmount -> minOrderValue
+    @Column(name = "min_order_value")
+    private BigDecimal minOrderValue;
 
-    // Giới hạn số lần sử dụng
-    @Column(name = "usage_limit")
+    // Thêm các trường List ID
+    @ElementCollection
+    @CollectionTable(name = "coupon_product_ids", joinColumns = @JoinColumn(name = "coupon_id"))
+    @Column(name = "product_id")
+    private List<Long> productIds;
+
+    @ElementCollection
+    @CollectionTable(name = "coupon_category_ids", joinColumns = @JoinColumn(name = "coupon_id"))
+    @Column(name = "category_id")
+    private List<Long> categoryIds;
+
+    // Sửa tên biến: startsAt -> startDate
+    @Column(name = "start_date")
+    private LocalDateTime startDate;
+
+    // Sửa tên biến: endsAt -> endDate
+    @Column(name = "end_date")
+    private LocalDateTime endDate;
+
     private Integer usageLimit;
+    private Integer usedCount;
+    private Boolean active;
 
-    // Số lần đã sử dụng
-    @Column(name = "used_count")
-    private Integer usedCount = 0;
-
-    @Column(name = "starts_at")
-    private LocalDateTime startsAt; // Ngày bắt đầu
-
-    @Column(name = "ends_at")
-    private LocalDateTime endsAt; // Ngày kết thúc
-
-    @Column(name = "active", nullable = false)
-    private boolean active = true;
+    @PrePersist
+    public void prePersist() {
+        if (usedCount == null) usedCount = 0;
+        if (active == null) active = true;
+    }
 }

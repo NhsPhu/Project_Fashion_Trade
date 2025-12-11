@@ -5,7 +5,9 @@ import com.example.fashion.dto.UpdateUserStatusRequest;
 import com.example.fashion.dto.UserResponseDTO;
 import com.example.fashion.security.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*; // <-- Import mới
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -20,7 +22,16 @@ public class AdminUserController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
+    public ResponseEntity<?> getAllUsers() {
+        // --- ĐOẠN DEBUG BẮT LỖI (Quan trọng) ---
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("==========================================");
+        System.out.println("🔴 CHECK QUYỀN TRUY CẬP USERS:");
+        System.out.println(" - User đang gọi: " + auth.getName());
+        System.out.println(" - Quyền server nhận được: " + auth.getAuthorities());
+        System.out.println("==========================================");
+        // ---------------------------------------
+
         List<UserResponseDTO> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }

@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Service
+// SỬA: Đặt tên Bean cụ thể là "securityUserService" để không trùng với file chính
+@Service("securityUserService")
 public class UserService {
 
     private final UserRepository userRepository;

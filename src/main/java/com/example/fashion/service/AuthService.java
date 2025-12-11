@@ -1,7 +1,8 @@
 package com.example.fashion.service;
 
-import com.example.fashion.dto.CustomerRegisterRequestDTO; // <-- 1. Import mới
+import com.example.fashion.dto.CustomerRegisterRequestDTO;
 import com.example.fashion.dto.LoginRequest;
+import com.example.fashion.dto.LoginResponse; // <-- 1. Import LoginResponse
 import com.example.fashion.dto.RegisterAdminRequest;
 import com.example.fashion.entity.User;
 import com.example.fashion.enums.Role;
@@ -35,10 +36,9 @@ public class AuthService {
     }
 
     /**
-     * Logic đăng nhập
+     * Logic đăng nhập cho User thường (trả về String token)
      */
     public String loginUser(LoginRequest loginRequest) {
-        // ... (Giữ nguyên code)
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getEmail(),
@@ -49,8 +49,41 @@ public class AuthService {
         return jwtTokenProvider.generateToken(authentication);
     }
 
+    /**
+     * Logic đăng nhập cho ADMIN (trả về LoginResponse Object)
+     * Đây là hàm bị thiếu gây ra lỗi ở Controller
+     */
+    public LoginResponse adminLogin(LoginRequest request) {
+        // 1. Xác thực qua Spring Security
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-    // ========== 2. THÊM HÀM MỚI ==========
+        // 2. Kiểm tra lại user trong DB để check quyền
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        // 3. KIỂM TRA QUYỀN: Nếu chỉ là CUSTOMER thì không cho vào trang Admin
+        boolean isCustomerOnly = user.getRoles().size() == 1 && user.getRoles().contains(Role.CUSTOMER);
+        if (isCustomerOnly) {
+            throw new RuntimeException("Bạn không có quyền truy cập vào trang quản trị!");
+        }
+
+        // 4. Tạo token
+        String token = jwtTokenProvider.generateToken(authentication);
+
+        // 5. Trả về đối tượng LoginResponse
+        return LoginResponse.builder()
+                .token(token)
+                .refreshToken("") // Nếu chưa dùng refresh token thì để rỗng hoặc null
+                .build();
+    }
+
+    // ========== THÊM HÀM MỚI ==========
     /**
      * Logic đăng ký cho Khách hàng (Customer)
      */
@@ -69,12 +102,8 @@ public class AuthService {
 
         // 3. Gán vai trò CUSTOMER
         customer.setRoles(Set.of(Role.CUSTOMER));
-
         customer.setStatus("active");
-
-        // Yêu cầu 3.1: Cần xác thực email (chúng ta tạm thời bỏ qua bước gửi mail)
-        customer.setEmailVerified(false); // (Tạm thời đặt là false, khi nào làm
-        // chức năng xác thực mail thì đổi)
+        customer.setEmailVerified(false);
 
         // 4. Lưu vào DB
         return userRepository.save(customer);
@@ -86,7 +115,6 @@ public class AuthService {
      * Logic đăng ký tài khoản SUPER_ADMIN
      */
     public User registerSuperAdmin(RegisterAdminRequest request) {
-        // ... (Giữ nguyên code)
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email đã được sử dụng");
         }

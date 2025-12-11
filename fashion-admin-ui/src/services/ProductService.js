@@ -1,82 +1,48 @@
-import axios from 'axios';
+// TỆP: src/services/ProductService.js (hoặc src/services/user/ProductService.js)
 
-/**
- * Dịch vụ xử lý API liên quan đến Quản lý Sản phẩm
- */
+// Giả sử httpClient của bạn được cấu hình với baseURL là '/api/v1'
+// hoặc bạn import nó từ một tệp cấu hình axios
+// src/services/ProductService.js
+
+// src/services/ProductService.js
+
+// SỬA: Import 'userApiClient' theo tên và đổi tên nó thành 'httpClient'
+import { userApiClient as httpClient } from './user/httpClient';
+// ...
+// ...
+
 const ProductService = {
-
-    /**
-     * Lấy danh sách sản phẩm (có phân trang)
-     */
-    getAllProducts: async (page = 0, size = 10, sort = "id,desc") => {
+    getProducts: async (params = {}) => {
         try {
-            const [sortField, sortDir] = sort.split(',');
-            const params = {
-                page: page,
-                size: size,
-                sort: `${sortField},${sortDir}`
-            };
-            const response = await axios.get('/api/v1/admin/products', { params });
+            // LỖI CŨ: /products
+            // const response = await httpClient.get('/products', { params });
+
+            // ĐÃ SỬA: Phải gọi đúng API công khai
+            const response = await httpClient.get('/public/products', { params });
+
             return response.data;
         } catch (error) {
-            console.error('Lỗi khi lấy danh sách sản phẩm:', error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Không thể tải danh sách sản phẩm');
+            console.error('API Error - getProducts:', error);
+            throw error;
         }
     },
 
-    /**
-     * MỚI: Lấy chi tiết một sản phẩm
-     * @param {number} id
-     */
     getProductById: async (id) => {
         try {
-            const response = await axios.get(`/api/v1/admin/products/${id}`);
+            // LỖI CŨ: /products/{id}
+            // const response = await httpClient.get(`/products/${id}`);
+
+            // ĐÃ SỬA: Phải gọi đúng API công khai
+            // (Controller của bạn dùng cả /public/products/{id} và /public/products/slug/{slug})
+            // Hãy chọn 1 trong 2 tùy theo logic của bạn. Dưới đây là ví dụ dùng ID:
+            const response = await httpClient.get(`/public/products/${id}`);
+
             return response.data;
         } catch (error) {
-            console.error(`Lỗi khi lấy sản phẩm ${id}:`, error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Không thể tải chi tiết sản phẩm');
+            console.error('API Error - getProductById:', error);
+            throw error;
         }
     },
-
-    /**
-     * Tạo một sản phẩm mới
-     */
-    createProduct: async (productData) => {
-        try {
-            const response = await axios.post('/api/v1/admin/products', productData);
-            return response.data;
-        } catch (error) {
-            console.error('Lỗi khi tạo sản phẩm:', error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Tạo sản phẩm thất bại');
-        }
-    },
-
-    /**
-     * MỚI: Cập nhật một sản phẩm
-     * @param {number} id
-     * @param {object} productData - Dữ liệu của ProductUpdateRequestDTO
-     */
-    updateProduct: async (id, productData) => {
-        try {
-            const response = await axios.put(`/api/v1/admin/products/${id}`, productData);
-            return response.data;
-        } catch (error) {
-            console.error(`Lỗi khi cập nhật sản phẩm ${id}:`, error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Cập nhật sản phẩm thất bại');
-        }
-    },
-
-    /**
-     * Xóa (Archived) một sản phẩm
-     */
-    deleteProduct: async (id) => {
-        try {
-            await axios.delete(`/api/v1/admin/products/${id}`);
-        } catch (error) {
-            console.error(`Lỗi khi xóa sản phẩm ${id}:`, error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Xóa sản phẩm thất bại');
-        }
-    }
 };
 
 export default ProductService;

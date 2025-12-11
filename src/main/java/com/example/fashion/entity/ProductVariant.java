@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product_variants")
@@ -23,7 +24,7 @@ public class ProductVariant {
     @Column(name = "sku", unique = true, length = 100)
     private String sku; // Mã định danh duy nhất cho biến thể
 
-    // Ví dụ: {"color": "Red", "size": "L"}
+
     // Chúng ta lưu dưới dạng String (JSON) và xử lý ở tầng service
     @Column(name = "attributes", columnDefinition = "TEXT")
     private String attributes;
@@ -35,8 +36,26 @@ public class ProductVariant {
     private BigDecimal salePrice; // Giá khuyến mãi
 
     @Column(name = "stock_quantity", nullable = false)
-    private Integer stockQuantity; // Tồn kho
+    private Integer stockQuantity;
 
     @Column(name = "weight")
     private Double weight;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
 }

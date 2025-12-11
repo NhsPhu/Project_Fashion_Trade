@@ -1,0 +1,311 @@
+-- ==========================================================
+-- TẠO DATABASE
+-- ==========================================================
+-- =========================================================
+-- CREATE DATABASE
+-- =========================================================
+DROP DATABASE IF EXISTS fashion_db;
+CREATE DATABASE fashion_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE fashion_db;
+
+-- ==========================================================
+-- 1. TẠO CÁC BẢNG (đúng cấu trúc với dữ liệu bạn đang insert)
+-- ==========================================================
+
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255),
+    phone VARCHAR(20),
+    status VARCHAR(20) DEFAULT 'active',
+    email_verified BOOLEAN DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Bỏ bảng user_roles vì bạn không dùng nữa, thay bằng role trong users nếu cần
+-- Nếu vẫn muốn giữ thì tạo lại, nhưng dữ liệu hiện tại không insert vào bảng này
+
+CREATE TABLE brands (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255)
+);
+
+CREATE TABLE categories (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255),
+    parent_id BIGINT NULL,
+    active BOOLEAN DEFAULT TRUE,
+    sort_order INT DEFAULT 0,
+    FOREIGN KEY (parent_id) REFERENCES categories(id)
+);
+
+CREATE TABLE products (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255),
+    description TEXT,
+    category_id BIGINT NOT NULL,
+    brand_id BIGINT NOT NULL,
+    status VARCHAR(50) DEFAULT 'Published',   -- có trong dữ liệu
+    default_image VARCHAR(500),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (brand_id) REFERENCES brands(id)
+);
+
+CREATE TABLE product_variants (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    sku VARCHAR(100) NOT NULL,
+    attributes TEXT,               -- bạn đang lưu kiểu {sizeM,colorĐen}
+    price INT NOT NULL,
+    sale_price INT,
+    stock_quantity INT DEFAULT 0,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE TABLE product_images (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    url VARCHAR(500) NOT NULL,     -- đổi từ url → url (trong script cũ bạn dùng url)
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE TABLE orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_no VARCHAR(50) NOT NULL,
+    user_id BIGINT NOT NULL,
+    total_amount INT NOT NULL,
+    shipping_fee INT DEFAULT 0,          -- thêm cột này
+    discount_amount INT DEFAULT 0,       -- thêm cột này
+    pay_status VARCHAR(50),
+    order_status VARCHAR(50),
+    payment_method VARCHAR(50),
+    shipping_name VARCHAR(255),
+    shipping_phone VARCHAR(20),
+    shipping_address_line VARCHAR(500),
+    shipping_city VARCHAR(255),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE order_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    variant_id BIGINT NOT NULL,
+    product_name VARCHAR(255),
+    unit_price INT,
+    quantity INT DEFAULT 1,
+    subtotal INT,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (variant_id) REFERENCES product_variants(id)
+);
+
+-- =========================================================
+-- DONE - DATABASE READY
+-- =========================================================
+
+
+
+
+
+-- ==========================================================
+-- BƯỚC 1 XÓA SẠCH DỮ LIỆU CŨ (Để chạy lại)
+-- ==========================================================
+SET FOREIGN_KEY_CHECKS = 0; -- (Chỉ dành cho MySQL)
+
+TRUNCATE TABLE order_items;
+TRUNCATE TABLE orders;
+TRUNCATE TABLE product_images;
+TRUNCATE TABLE product_variants;
+TRUNCATE TABLE products;
+TRUNCATE TABLE categories;
+TRUNCATE TABLE brands;
+TRUNCATE TABLE users;
+
+
+SET FOREIGN_KEY_CHECKS = 1; -- (Chỉ dành cho MySQL)
+
+
+-- ==========================================================
+-- BƯỚC 2 USERS (Người dùng)
+-- Mật khẩu cho tất cả là 123456
+-- Hash $2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq
+-- ==========================================================
+INSERT INTO users (id, email, password_hash, full_name, phone, status, email_verified, created_at, updated_at)
+VALUES
+(1, 'superadmin@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Super Admin', '0900000001', 'active', true, NOW(), NOW()),
+(2, 'manager@ecommerce.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'General Manager', '0900000002', 'active', true, NOW(), NOW()),
+(11, 'customer1@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Nguyễn Văn A', '0911111111', 'active', true, NOW(), NOW()),
+(12, 'customer2@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Trần Thị B', '0922222222', 'active', true, NOW(), NOW()),
+(13, 'customer3@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Lê Văn C', '0933333333', 'active', true, NOW(), NOW()),
+(14, 'customer4@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Phạm Thị D', '0944444444', 'active', true, NOW(), NOW()),
+(15, 'customer5@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Võ Văn E', '0955555555', 'active', true, NOW(), NOW()),
+(16, 'customer6@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Đặng Thị F', '0966666666', 'active', true, NOW(), NOW()),
+(17, 'customer7@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Hoàng Văn G', '0977777777', 'active', true, NOW(), NOW()),
+(18, 'customer8@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Bùi Thị H', '0988888888', 'active', true, NOW(), NOW()),
+(19, 'customer9@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Dương Văn I', '0999999999', 'active', true, NOW(), NOW()),
+(20, 'customer10@gmail.com', '$2a$10$mB52p1s5eO4.G.lGv.kXO.OT5sWpIYISMO2im.b68.Q3g.DLq', 'Ngô Thị J', '0912345678', 'active', true, NOW(), NOW());
+
+
+-- ==========================================================
+-- BƯỚC 4 BRANDS (Thương hiệu)
+-- ==========================================================
+INSERT INTO brands (id, name, slug)
+VALUES
+(1, 'Nike', 'nike'),
+(2, 'Adidas', 'adidas'),
+(3, 'Uniqlo', 'uniqlo'),
+(4, 'Zara', 'zara'),
+(5, 'H&M', 'h-m');
+
+-- ==========================================================
+-- BƯỚC 5 CATEGORIES (Danh mục)
+-- ==========================================================
+INSERT INTO categories (id, name, slug, parent_id, active, sort_order)
+VALUES
+(1, 'Thời Trang Nam', 'thoi-trang-nam', NULL, true, 1),
+(2, 'Thời Trang Nữ', 'thoi-trang-nu', NULL, true, 2),
+(3, 'Áo Nam', 'ao-nam', 1, true, 1),
+(4, 'Quần Nam', 'quan-nam', 1, true, 2),
+(5, 'Váy Nữ', 'vay-nu', 2, true, 1),
+(6, 'Áo Nữ', 'ao-nu', 2, true, 2),
+(7, 'Giày Dép', 'giay-dep', NULL, true, 3);
+
+-- ==========================================================
+-- BƯỚC 6: PRODUCTS (CẬP NHẬT THEO HÌNH ẢNH THỰC TẾ)
+-- ==========================================================
+-- Lưu ý: Tên file ảnh được lấy chính xác từ screenshots bạn cung cấp.
+-- ==========================================================
+INSERT INTO products (id, name, slug, description, category_id, brand_id, status, default_image, created_at, updated_at)
+VALUES
+(1, 'Áo Thun Uniqlo Basic', 'ao-thun-uniqlo-basic', 'Vải cotton thoáng mát, thấm hút mồ hôi tốt.', 3, 3, 'Published', 'AoThunUniqlo-1.jpg', NOW(), NOW()),
+(2, 'Quần Jeans Zara Slim Fit', 'quan-jeans-zara-slim', 'Dáng ôm, vải denim cao cấp, màu xanh classic.', 4, 4, 'Published', 'QuanJeansZSF-2.jpg', NOW(), NOW()),
+(3, 'Giày Nike Revolution 6', 'giay-nike-revolution-6', 'Thiết kế nhẹ, êm ái, hỗ trợ chạy bộ hàng ngày.', 7, 1, 'Published', 'GiayNikeRevolution-3.jpg', NOW(), NOW()),
+(4, 'Áo Khoác Jean Nam Xanh', 'ao-khoac-jean-nam', 'Phong cách bụi bặm, chất liệu Jeans bền bỉ.', 3, 4, 'Published', 'AoKhoacJeanNamXanh-54.jpg', NOW(), NOW()),
+(5, 'Váy Zara Họa Tiết Hè', 'vay-zara-hoa-tiet', 'Váy ngắn họa tiết hoa nhí, chất vải mát mẻ.', 5, 4, 'Published', 'VayZara-5.jpg', NOW(), NOW()),
+(6, 'Áo Hoodie Adidas Black', 'ao-hoodie-adidas-black', 'Áo nỉ có mũ, giữ ấm tốt, logo Adidas nổi bật.', 3, 2, 'Published', 'AoHoodieAdidasBlack-13.jpg', NOW(), NOW()),
+(7, 'Quần Tây Uniqlo Smart', 'quan-tay-uniqlo-smart', 'Dáng quần âu lịch lãm, phù hợp công sở.', 4, 3, 'Published', 'QuanTayUniqlo-6.jpg', NOW(), NOW()),
+(8, 'Giày Adidas Ultraboost', 'giay-adidas-ultraboost', 'Công nghệ đế Boost hoàn trả năng lượng cực tốt.', 7, 2, 'Published', 'GiayAdidasUltraboost-7.jpg', NOW(), NOW()),
+(9, 'Áo Blouse Nữ Mango', 'ao-blouse-nu-mango', 'Thiết kế thanh lịch, tay dài, vải mềm mại.', 6, 5, 'Published', 'mango-blouse-35.jpg', NOW(), NOW()),
+(10, 'Giày Nike RE Thể Thao', 'giay-nike-re-the-thao', 'Mẫu giày thể thao năng động, màu đỏ nổi bật.', 7, 1, 'Published', 'GiayNikeRE-12.jpg', NOW(), NOW()),
+(11, 'Quần Short Nữ Gap', 'quan-short-nu-gap', 'Quần short nỉ thoải mái mặc nhà hoặc đi chơi.', 5, 5, 'Published', 'gap-shorts-39.jpg', NOW(), NOW()),
+(12, 'Áo Thun Nike Pro', 'ao-thun-nike-pro', 'Áo thể thao chuyên dụng, ôm sát cơ thể.', 3, 1, 'Published', 'AoThunNikePro-9.jpg', NOW(), NOW()),
+(13, 'Áo Khoác Nam Biker', 'ao-khoac-nam-biker', 'Kiểu dáng Biker mạnh mẽ, khóa kéo kim loại.', 3, 4, 'Published', 'AoKhoacNamBiker-55.jpg', NOW(), NOW()),
+(14, 'Quần Puma Trackpants', 'quan-puma-trackpants', 'Quần dài thể thao, ống suông, vải dù.', 4, 2, 'Published', 'puma-trackpants-21.jpg', NOW(), NOW()),
+(15, 'Váy Zara Dáng Dài', 'vay-zara-dang-dai', 'Váy liền thân họa tiết tối màu sang trọng.', 5, 4, 'Published', 'VayZara-15.jpg', NOW(), NOW()),
+(16, 'Áo Polo H&M Navy', 'ao-polo-hm-navy', 'Áo thun có cổ màu xanh than, lịch sự.', 3, 5, 'Published', 'hm-polo-navy-18.jpg', NOW(), NOW()),
+(17, 'Giày Sneaker Nữ Trắng', 'giay-sneaker-nu-trang', 'Giày trắng đơn giản, dễ phối đồ.', 7, 5, 'Published', 'sneaker-nu-46.jpg', NOW(), NOW()),
+(18, 'Áo Cardigan H&M', 'ao-cardigan-hm', 'Áo khoác len mỏng nhẹ nhàng cho nữ.', 6, 5, 'Published', 'hm-cardigan-44.jpg', NOW(), NOW()),
+(19, 'Quần Tây Nam Basic', 'quan-tay-nam-basic', 'Quần vải đen cơ bản, dáng đứng.', 4, 3, 'Published', 'QuanTay-14.jpg', NOW(), NOW()),
+(20, 'Áo Croptop Nữ', 'ao-croptop-nu', 'Áo croptop ngắn tay năng động.', 6, 4, 'Published', 'AoCroptopNu-8.jpg', NOW(), NOW());
+
+-- ==========================================================
+-- BƯỚC 7 PRODUCT_VARIANTS (40 Biến thể)
+-- ==========================================================
+INSERT INTO product_variants (id, product_id, sku, attributes, price, sale_price, stock_quantity)
+VALUES
+(1, 1, 'UQ-AIR-BLK-M', '{sizeM, colorĐen}', 299000, 299000, 100),
+(2, 1, 'UQ-AIR-BLK-L', '{sizeL, colorĐen}', 299000, 250000, 100),
+(3, 2, 'ZARA-JEAN-BLU-30', '{size30, colorXanh}', 899000, 899000, 80),
+(4, 2, 'ZARA-JEAN-BLU-31', '{size31, colorXanh}', 899000, 899000, 80),
+(5, 3, 'NIKE-REV6-40', '{size40, colorĐen}', 1500000, 1500000, 30),
+(6, 3, 'NIKE-REV6-41', '{size41, colorĐen}', 1500000, 1500000, 30),
+(7, 4, 'HM-BOMBER-M', '{sizeM, colorRêu}', 999000, 999000, 50),
+(8, 4, 'HM-BOMBER-L', '{sizeL, colorRêu}', 999000, 999000, 50),
+(9, 5, 'ZARA-DRESS-S', '{sizeS, colorHoa}', 999000, 999000, 60),
+(10, 5, 'ZARA-DRESS-M', '{sizeM, colorHoa}', 999000, 999000, 60),
+(11, 6, 'ADI-HOOD-M', '{sizeM, colorĐen}', 1200000, 1200000, 40),
+(12, 6, 'ADI-HOOD-L', '{sizeL, colorĐen}', 1200000, 1200000, 40),
+(13, 7, 'UQ-PANT-S', '{sizeS, colorXám}', 899000, 799000, 70),
+(14, 7, 'UQ-PANT-M', '{sizeM, colorXám}', 899000, 899000, 70),
+(15, 8, 'ADI-UB-40', '{size40, colorTrắng}', 3500000, 3500000, 20),
+(16, 8, 'ADI-UB-41', '{size41, colorTrắng}', 3500000, 3200000, 20),
+(17, 9, 'HM-SILK-S', '{sizeS, colorHồng}', 699000, 699000, 55),
+(18, 9, 'HM-SILK-M', '{sizeM, colorHồng}', 699000, 699000, 55),
+(19, 10, 'NIKE-AF1-40', '{size40, colorTrắng}', 2800000, 2800000, 35),
+(20, 10, 'NIKE-AF1-41', '{size41, colorTrắng}', 2800000, 2800000, 35),
+(21, 11, 'ZARA-SHORT-S', '{sizeS, colorBe}', 799000, 799000, 65),
+(22, 11, 'ZARA-SHORT-M', '{sizeM, colorBe}', 799000, 799000, 65),
+(23, 12, 'UQ-SQ-S', '{sizeS, colorĐen}', 399000, 399000, 90),
+(24, 12, 'UQ-SQ-M', '{sizeM, colorĐen}', 399000, 399000, 90),
+(25, 13, 'ADI-WIND-M', '{sizeM, colorXanh}', 1800000, 1800000, 30),
+(26, 13, 'ADI-WIND-L', '{sizeL, colorXanh}', 1800000, 1800000, 30),
+(27, 14, 'NIKE-TECH-M', '{sizeM, colorXám}', 2200000, 2200000, 25),
+(28, 14, 'NIKE-TECH-L', '{sizeL, colorXám}', 2200000, 2200000, 25),
+(29, 15, 'HM-DRESS-S', '{sizeS, colorVàng}', 599000, 599000, 50),
+(30, 15, 'HM-DRESS-M', '{sizeM, colorVàng}', 599000, 599000, 50),
+(31, 16, 'ZARA-POLO-M', '{sizeM, colorTrắng}', 799000, 799000, 60),
+(32, 16, 'ZARA-POLO-L', '{sizeL, colorTrắng}', 799000, 799000, 60),
+(33, 17, 'HM-SANDAL-37', '{size37, colorNâu}', 499000, 499000, 70),
+(34, 17, 'HM-SANDAL-38', '{size38, colorNâu}', 499000, 499000, 70),
+(35, 18, 'UQ-WOOL-S', '{sizeS, colorBe}', 899000, 899000, 45),
+(36, 18, 'UQ-WOOL-M', '{sizeM, colorBe}', 899000, 899000, 45),
+(37, 19, 'UQ-KAKI-30', '{size30, colorĐen}', 999000, 999000, 55),
+(38, 19, 'UQ-KAKI-31', '{size31, colorĐen}', 999000, 999000, 55),
+(39, 20, 'ZARA-CROP-S', '{sizeS, colorTrắng}', 499000, 499000, 85),
+(40, 20, 'ZARA-CROP-M', '{sizeM, colorTrắng}', 499000, 499000, 85);
+
+-- ==========================================================
+-- BƯỚC 8: PRODUCT_IMAGES (CẬP NHẬT URL ẢNH TƯƠNG ỨNG)
+-- ==========================================================
+INSERT INTO product_images (product_id, url)
+VALUES
+(1, 'AoThunUniqlo-1.jpg'),
+(2, 'QuanJeansZSF-2.jpg'),
+(3, 'GiayNikeRevolution-3.jpg'),
+(4, 'AoKhoacJeanNamXanh-54.jpg'),
+(5, 'VayZara-5.jpg'),
+(6, 'AoHoodieAdidasBlack-13.jpg'),
+(7, 'QuanTayUniqlo-6.jpg'),
+(8, 'GiayAdidasUltraboost-7.jpg'),
+(9, 'mango-blouse-35.jpg'),
+(10, 'GiayNikeRE-12.jpg'),
+(11, 'gap-shorts-39.jpg'),
+(12, 'AoThunNikePro-9.jpg'),
+(13, 'AoKhoacNamBiker-55.jpg'),
+(14, 'puma-trackpants-21.jpg'),
+(15, 'VayZara-15.jpg'),
+(16, 'hm-polo-navy-18.jpg'),
+(17, 'sneaker-nu-46.jpg'),
+(18, 'hm-cardigan-44.jpg'),
+(19, 'QuanTay-14.jpg'),
+(20, 'AoCroptopNu-8.jpg');
+
+-- ==========================================================
+-- BƯỚC 9 ORDERS (10 Đơn hàng)
+-- ==========================================================
+INSERT INTO orders (id, order_no, user_id, total_amount, shipping_fee, discount_amount, pay_status, order_status, payment_method, shipping_name, shipping_phone, shipping_address_line, shipping_city)
+VALUES
+(1, 'ORD-001', 11, 299000, 30000, 0, 'Paid', 'Delivered', 'VNPay', 'Nguyễn Văn A', '0911111111', '123 Đường A', 'Hồ Chí Minh'),
+(2, 'ORD-002', 12, 899000, 30000, 0, 'Pending', 'Processing', 'COD', 'Trần Thị B', '0922222222', '456 Đường B', 'Hà Nội'),
+(3, 'ORD-003', 11, 1500000, 30000, 0, 'Paid', 'Delivered', 'VNPay', 'Nguyễn Văn A', '0911111111', '123 Đường A', 'Hồ Chí Minh'),
+(4, 'ORD-004', 13, 598000, 30000, 0, 'Paid', 'Delivered', 'VNPay', 'Lê Văn C', '0933333333', '789 Đường C', 'Đà Nẵng'),
+(5, 'ORD-005', 14, 999000, 30000, 0, 'Pending', 'Pending', 'COD', 'Phạm Thị D', '0944444444', '101 Đường D', 'Hồ Chí Minh'),
+(6, 'ORD-006', 15, 1500000, 30000, 0, 'Paid', 'Shipped', 'VNPay', 'Võ Văn E', '0955555555', '202 Đường E', 'Hà Nội'),
+(7, 'ORD-007', 16, 1200000, 30000, 0, 'Paid', 'Processing', 'VNPay', 'Đặng Thị F', '0966666666', '303 Đường F', 'Hải Phòng'),
+(8, 'ORD-008', 17, 799000, 30000, 0, 'Pending', 'Cancelled', 'COD', 'Hoàng Văn G', '0977777777', '404 Đường G', 'Cần Thơ'),
+(9, 'ORD-009', 18, 3500000, 0, 0, 'Paid', 'Delivered', 'VNPay', 'Bùi Thị H', '0988888888', '505 Đường H', 'Hồ Chí Minh'),
+(10, 'ORD-010', 20, 499000, 30000, 0, 'Pending', 'Pending', 'COD', 'Ngô Thị J', '0912345678', '606 Đường J', 'Hà Nội');
+
+-- ==========================================================
+-- BƯỚC 10 ORDER_ITEMS (Chi tiết đơn hàng)
+-- ==========================================================
+INSERT INTO order_items 
+    (id, order_id, variant_id, product_name, unit_price, quantity, subtotal) 
+VALUES 
+    (1, 1, 1, 'Áo Thun Uniqlo AIRism Cổ Tròn', 299000, 1, 299000),
+    (2, 2, 3, 'Quần Jeans Zara Slim Fit', 899000, 1, 899000),
+    (3, 3, 5, 'Giày Chạy Bộ Nike Revolution 6', 1500000, 1, 1500000),
+    (4, 4, 1, 'Áo Thun Uniqlo AIRism Cổ Tròn', 299000, 2, 598000),
+    (5, 5, 9, 'Váy Hoa Zara Mùa Hè', 999000, 1, 999000),
+    (6, 6, 6, 'Giày Chạy Bộ Nike Revolution 6', 1500000, 1, 1500000),
+    (7, 7, 11, 'Áo Hoodie Adidas Essentials', 1200000, 1, 1200000),
+    (8, 8, 13, 'Quần Tây Uniqlo Smart Ankle', 799000, 1, 799000),
+    (9, 9, 15, 'Giày Adidas Ultraboost 22', 3500000, 1, 3500000),
+    (10, 10, 39, 'Áo Croptop Nữ Zara', 499000, 1, 499000);

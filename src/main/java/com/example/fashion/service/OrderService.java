@@ -1,70 +1,118 @@
 package com.example.fashion.service;
 
+import com.example.fashion.dto.CheckoutRequestDTO; // SỬA: DÙNG DTO ĐÚNG
 import com.example.fashion.dto.OrderResponseDTO;
 import com.example.fashion.dto.UpdateOrderStatusRequestDTO;
-import com.example.fashion.entity.Order;
-import com.example.fashion.repository.OrderRepository;
+import com.example.fashion.entity.*;
+import com.example.fashion.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+
 @Service
+@RequiredArgsConstructor
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final ProductVariantRepository variantRepository;
+    private final UserRepository userRepository;
 
-    public OrderService(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
+    @Transactional
+    public Order createOrder(CheckoutRequestDTO request) { // SỬA: CheckoutRequestDTO
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Order order = Order.builder()
+                .orderNo(generateOrderNo())
+                .user(user)
+                .customerName(request.getShippingName()) // DÙNG shippingName
+                .shippingName(request.getShippingName())
+                .shippingPhone(request.getShippingPhone())
+                .shippingAddressLine(request.getShippingAddressLine())
+                .shippingCity(request.getShippingCity())
+                .shippingDistrict(request.getShippingDistrict())
+                .shippingProvince(request.getShippingProvince())
+                .paymentMethod(request.getPaymentMethod())
+                .orderStatus("PENDING")
+                .payStatus("PENDING")
+                .totalAmount(BigDecimal.ZERO)
+                .finalAmount(BigDecimal.ZERO)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .items(new HashSet<>())
+                .build();
+
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (CheckoutRequestDTO.CartItem item : request.getItems()) { // CartItem có trong DTO
+            ProductVariant variant = variantRepository.findById(item.getVariantId())
+                    .orElseThrow(() -> new RuntimeException("Variant not found"));
+
+            if (variant.getStockQuantity() < item.getQuantity()) {
+                throw new RuntimeException("Insufficient stock");
+            }
+
+            BigDecimal unitPrice = variant.getSalePrice() != null
+                    ? variant.getSalePrice()
+                    : variant.getPrice(); // SỬA: getPrice() thay vì getOriginalPrice()
+
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .variant(variant)
+                    .quantity(item.getQuantity())
+                    .unitPrice(unitPrice)
+                    .subtotal(unitPrice.multiply(BigDecimal.valueOf(item.getQuantity())))
+                    .build();
+
+            order.getItems().add(orderItem);
+            totalAmount = totalAmount.add(orderItem.getSubtotal());
+
+            variant.setStockQuantity(variant.getStockQuantity() - item.getQuantity());
+            variantRepository.save(variant);
+        }
+
+        order.setTotalAmount(totalAmount);
+        order.setFinalAmount(totalAmount.add(order.getShippingFee()));
+
+        return orderRepository.save(order);
     }
 
-    /**
-     * Lấy danh sách đơn hàng (có phân trang) cho Admin
-     * (Chúng ta sẽ thêm Filter/Specification sau nếu cần)
-     */
     public Page<OrderResponseDTO> getAllOrders(Pageable pageable) {
-        Page<Order> orderPage = orderRepository.findAll(pageable);
-
-        // Chuyển đổi Page<Order> sang Page<OrderResponseDTO>
-        return orderPage.map(OrderResponseDTO::fromOrder);
+        return orderRepository.findAll(pageable).map(OrderResponseDTO::fromOrder);
     }
 
-    /**
-     * Lấy chi tiết một đơn hàng
-     */
     public OrderResponseDTO getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + orderId));
-
-        // Cần đảm bảo các lazy-loading (như User, Items) được tải
-        // (Trong trường hợp này, việc convert sang DTO sẽ kích hoạt chúng)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
         return OrderResponseDTO.fromOrder(order);
     }
 
-    /**
-     * Cập nhật trạng thái đơn hàng (Mục 4.5)
-     */
     @Transactional
     public OrderResponseDTO updateOrderStatus(Long orderId, UpdateOrderStatusRequestDTO request) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + orderId));
+                .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // Cập nhật các trường nếu chúng được cung cấp trong request
         if (request.getOrderStatus() != null && !request.getOrderStatus().isEmpty()) {
             order.setOrderStatus(request.getOrderStatus());
-            // TODO: Thêm logic nghiệp vụ (ví dụ: nếu chuyển sang "Shipped", trừ kho)
         }
-
         if (request.getPayStatus() != null && !request.getPayStatus().isEmpty()) {
             order.setPayStatus(request.getPayStatus());
-            // TODO: Thêm logic (ví dụ: nếu "Paid", gửi email xác nhận)
         }
-
         if (request.getTrackingNumber() != null && !request.getTrackingNumber().isEmpty()) {
             order.setTrackingNumber(request.getTrackingNumber());
         }
 
-        Order updatedOrder = orderRepository.save(order);
-        return OrderResponseDTO.fromOrder(updatedOrder);
+        order.setUpdatedAt(LocalDateTime.now());
+        return OrderResponseDTO.fromOrder(orderRepository.save(order));
+    }
+
+    private String generateOrderNo() {
+        return "ORD-" + System.currentTimeMillis();
     }
 }

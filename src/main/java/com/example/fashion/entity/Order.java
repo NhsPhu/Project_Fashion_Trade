@@ -1,51 +1,65 @@
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter; // <-- Đảm bảo bạn có @Setter
+import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
 @Table(name = "orders")
-@Getter
-@Setter // <-- LỖI SẼ BIẾN MẤT NẾU CÓ DÒNG NÀY
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder // THÊM @Builder
 public class Order {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "order_no", unique = true, nullable = false, length = 50)
+    @Column(name = "order_no")
     private String orderNo;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(name = "total_amount", precision = 10, scale = 2, nullable = false)
+    @Column(name = "customer_name")
+    private String customerName;
+
+    @Column(name = "total_amount", precision = 15, scale = 2)
     private BigDecimal totalAmount;
 
-    @Column(name = "shipping_fee", precision = 10, scale = 2)
-    private BigDecimal shippingFee;
+    @Column(name = "shipping_fee", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal shippingFee = BigDecimal.ZERO;
 
-    @Column(name = "discount_amount", precision = 10, scale = 2)
-    private BigDecimal discountAmount;
+    @Column(name = "discount_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal discountAmount = BigDecimal.ZERO;
 
-    @Column(name = "pay_status", length = 50)
+    @Column(name = "final_amount", precision = 15, scale = 2)
+    private BigDecimal finalAmount;
+
+    @Column(name = "pay_status")
     private String payStatus;
 
-    @Column(name = "order_status", length = 50)
+    @Column(name = "order_status")
     private String orderStatus;
 
-    @Column(name = "payment_method", length = 50)
+    @Column(name = "payment_method")
     private String paymentMethod;
 
-    @Column(name = "shipping_name", length = 100)
+    @Column(name = "tracking_number")
+    private String trackingNumber;
+
+    @Column(name = "shipping_name")
     private String shippingName;
 
-    @Column(name = "shipping_phone", length = 20)
+    @Column(name = "shipping_phone")
     private String shippingPhone;
 
     @Column(name = "shipping_address_line")
@@ -60,17 +74,7 @@ public class Order {
     @Column(name = "shipping_province")
     private String shippingProvince;
 
-    // TRƯỜNG BỊ THIẾU NẰM Ở ĐÂY
-    @Column(name = "tracking_number", length = 100)
-    private String trackingNumber; // <-- @Setter sẽ tạo ra setTrackingNumber()
-
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<OrderItem> items;
 
     @PrePersist

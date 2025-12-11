@@ -1,75 +1,35 @@
+// src/services/user/CategoryService.js
 import axios from 'axios';
 
 /**
- * Dịch vụ xử lý API liên quan đến Quản lý Danh mục (Category)
+ * Dịch vụ xử lý API danh mục cho người dùng (không cần quyền admin)
  */
 const CategoryService = {
-
     /**
-     * Lấy danh sách tất cả danh mục
+     * Lấy danh sách tất cả danh mục (chỉ hiển thị danh mục active)
      */
-    getAllCategories: async () => {
+    getAll: async () => {
         try {
-            const response = await axios.get('/api/v1/admin/categories');
+            const response = await axios.get('/api/v1/user/categories');
             return response.data;
         } catch (error) {
             console.error('Lỗi khi lấy danh sách danh mục:', error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Không thể tải danh sách danh mục');
+            throw new Error(error.response?.data?.message || 'Không thể tải danh mục');
         }
     },
 
     /**
-     * Lấy chi tiết một danh mục
+     * Lấy danh mục theo slug
      */
-    getCategoryById: async (id) => {
+    getBySlug: async (slug) => {
         try {
-            const response = await axios.get(`/api/v1/admin/categories/${id}`);
+            const response = await axios.get(`/api/v1/user/categories/${slug}`);
             return response.data;
         } catch (error) {
-            console.error(`Lỗi khi lấy danh mục ${id}:`, error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Không thể tải chi tiết danh mục');
+            console.error(`Lỗi khi lấy danh mục ${slug}:`, error.response?.data || error.message);
+            throw new Error(error.response?.data?.message || 'Không tìm thấy danh mục');
         }
     },
-
-    /**
-     * Tạo một danh mục mới
-     */
-    createCategory: async (categoryData) => {
-        try {
-            const response = await axios.post('/api/v1/admin/categories', categoryData);
-            return response.data;
-        } catch (error) {
-            console.error('Lỗi khi tạo danh mục:', error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Tạo danh mục thất bại');
-        }
-    },
-
-    /**
-     * Cập nhật một danh mục
-     */
-    updateCategory: async (id, categoryData) => {
-        try {
-            const response = await axios.put(`/api/v1/admin/categories/${id}`, categoryData);
-            return response.data;
-        } catch (error) {
-            console.error(`Lỗi khi cập nhật danh mục ${id}:`, error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Cập nhật danh mục thất bại');
-        }
-    },
-
-    /**
-     * MỚI: Xóa một danh mục
-     */
-    deleteCategory: async (id) => {
-        try {
-            await axios.delete(`/api/v1/admin/categories/${id}`);
-        // ========== ĐÃ SỬA LỖI ==========
-        } catch (error) { // <-- Thêm {
-            console.error(`Lỗi khi xóa danh mục ${id}:`, error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Xóa danh mục thất bại');
-        } // <-- Thêm }
-        // =================================
-    }
 };
 
 export default CategoryService;

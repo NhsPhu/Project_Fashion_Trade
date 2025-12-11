@@ -1,5 +1,5 @@
+// src/main/java/com/example/fashion/service/ProductService.java
 package com.example.fashion.service;
-
 
 import com.example.fashion.dto.*;
 import com.example.fashion.entity.*;
@@ -67,11 +67,12 @@ public class ProductService {
      * CHỨC NĂNG ĐỌC (READ) - LẤY DANH SÁCH + PHÂN TRANG
      */
     public Page<ProductResponseDTO> getAllProducts(Pageable pageable) {
-        // 1. Lấy trang (Page) của Entity
-        Page<Product> productPage = productRepository.findAll(pageable);
+
+        // SỬA LỖI N+1:
+        // Page<Product> productPage = productRepository.findAll(pageable); // <-- Lỗi cũ
+        Page<Product> productPage = productRepository.findAllWithVariants(pageable); // <-- ĐÃ SỬA
 
         // 2. Chuyển đổi (map) trang Entity sang trang DTO
-        // productPage.map(product -> ProductResponseDTO.fromProduct(product))
         return productPage.map(ProductResponseDTO::fromProduct);
     }
 
@@ -106,15 +107,11 @@ public class ProductService {
                 request.getSeoMetaTitle(), request.getSeoMetaDesc());
 
         // 4. Cập nhật Variants và Images (Cách đơn giản: Xóa cũ, thêm mới)
-        // Xóa các variant và image cũ (orphanRemoval=true trong Entity @OneToMany sẽ tự xóa)
         product.getVariants().clear();
         product.getImages().clear();
-
-        // Xóa khỏi DB (do orphanRemoval có thể không kích hoạt ngay lập tức)
         productVariantRepository.deleteAll(product.getVariants());
         productImageRepository.deleteAll(product.getImages());
 
-        // Thêm variant/image mới từ request
         Set<ProductVariant> newVariants = this.mapVariantDTOsToEntities(product, request.getVariants());
         product.getVariants().addAll(newVariants);
 
@@ -128,14 +125,12 @@ public class ProductService {
 
     /**
      * CHỨC NĂNG XÓA (DELETE) - Soft Delete
-     * Thay vì xóa, chúng ta cập nhật trạng thái thành "Archived"
      */
     @Transactional
     public void deleteProduct(Long productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Product ID: " + productId));
 
-        // Yêu cầu Mục 4.2: Quản lý trạng thái: Draft / Published / Archived
         product.setStatus("Archived");
         productRepository.save(product);
     }
@@ -145,9 +140,6 @@ public class ProductService {
     // CÁC HÀM TIỆN ÍCH (PRIVATE HELPERS)
     // =================================================================
 
-    /**
-     * Hàm private để gán thông tin từ DTO (Create/Update) vào Entity Product
-     */
     private void mapRequestToProduct(Product product, String name, String slug, String desc,
                                      String status, String defaultImage, Category category,
                                      Brand brand, String seoTitle, String seoDesc) {
@@ -162,9 +154,6 @@ public class ProductService {
         product.setSeoMetaDesc(seoDesc);
     }
 
-    /**
-     * Hàm private để chuyển Set<ProductVariantRequestDTO> sang Set<ProductVariant>
-     */
     private Set<ProductVariant> mapVariantDTOsToEntities(Product product, Set<ProductVariantRequestDTO> variantDTOs) {
         Set<ProductVariant> variants = new HashSet<>();
         if (variantDTOs != null) {
@@ -183,9 +172,6 @@ public class ProductService {
         return variants;
     }
 
-    /**
-     * Hàm private để chuyển Set<ProductImageRequestDTO> sang Set<ProductImage>
-     */
     private Set<ProductImage> mapImageDTOsToEntities(Product product, Set<ProductImageRequestDTO> imageDTOs) {
         Set<ProductImage> images = new HashSet<>();
         if (imageDTOs != null) {
