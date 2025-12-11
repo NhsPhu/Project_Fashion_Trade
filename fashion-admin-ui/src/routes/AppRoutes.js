@@ -1,8 +1,8 @@
 // routes/AppRoutes.js
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { Routes, Route } from 'react-router-dom';
 
+<<<<<<< HEAD
 // Layout
 import AdminLayout from '../components/layout/AdminLayout';
 import PrivateRoute from './PrivateRoute';
@@ -34,11 +34,20 @@ import WishlistDetailPage from '../user/pages/wishlists/WishlistDetailPage';
 // USER APP
 import UserApp from '../UserApp';
 
-function AppRoutes() {
-    const { isAuthenticated } = useAuth();
+=======
+// 1. Import từ thư mục hiện tại (./)
+import AdminRoutes from './AdminRoutes';
+import UserRoutes from './UserRoutes'; // <-- LỖI CỦA BẠN LÀ Ở ĐÂY
 
+/**
+ * Đây là bộ định tuyến GỐC (Root)
+ * Nó quyết định khi nào hiển thị Admin và khi nào hiển thị User
+ */
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
+function AppRoutes() {
     return (
         <Routes>
+<<<<<<< HEAD
             {/* Đăng nhập */}
             <Route
                 path="/login"
@@ -99,6 +108,15 @@ function AppRoutes() {
 
             {/* 404 */}
             <Route path="*" element={<h2>404 Not Found</h2>} />
+=======
+            {/* 1. Nếu đường dẫn là /admin/*,
+                hãy giao toàn quyền kiểm soát cho AdminRoutes */}
+            <Route path="/admin/*" element={<AdminRoutes />} />
+
+            {/* 2. Nếu là bất kỳ đường dẫn nào khác (/*),
+                hãy giao quyền kiểm soát cho UserRoutes */}
+            <Route path="/*" element={<UserRoutes />} />
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         </Routes>
     );
 }

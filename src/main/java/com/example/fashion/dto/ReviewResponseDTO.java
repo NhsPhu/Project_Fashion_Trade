@@ -17,7 +17,11 @@ public class ReviewResponseDTO {
     private Integer rating;
     private String title;
     private String body;
+<<<<<<< HEAD
     private String status; // ← String
+=======
+    private String status;          // ← Đây là String, không phải Enum
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     private LocalDateTime createdAt;
 
     public static ReviewResponseDTO fromReview(Review review) {
@@ -31,17 +35,29 @@ public class ReviewResponseDTO {
         if (review.getUser() != null) {
             dto.setUserId(review.getUser().getId());
             dto.setUserName(review.getUser().getFullName());
+<<<<<<< HEAD
+=======
+        } else {
+            dto.setUserName("Khách");
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         }
 
         dto.setRating(review.getRating());
         dto.setTitle(review.getTitle());
         dto.setBody(review.getBody());
 
+<<<<<<< HEAD
         // ĐÃ SỬA: enum → String
         dto.setStatus(review.getStatus().name()); // ← .name() convert enum → String
 
         dto.setCreatedAt(review.getCreatedAt());
 
+=======
+        // ĐÃ SỬA DỨT ĐIỂM: status là String → KHÔNG DÙNG .name() NỮA!
+        dto.setStatus(review.getStatus());   // ← Chỉ cần thế này là xong!
+
+        dto.setCreatedAt(review.getCreatedAt());
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         return dto;
     }
 }

@@ -13,8 +13,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+<<<<<<< HEAD
 // File này giữ nguyên là @Service chính (tên bean mặc định là userService)
 @Service
+=======
+// SỬA: Đặt tên Bean cụ thể là "securityUserService" để không trùng với file chính
+@Service("securityUserService")
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 public class UserService {
 
     private final UserRepository userRepository;
@@ -54,6 +59,10 @@ public class UserService {
     @Transactional
     public UserResponseDTO updateUserRoles(Long userId, UpdateUserRolesRequest request) {
         User user = userRepository.findById(userId)
+<<<<<<< HEAD
+=======
+                // ========== SỬA LỖI Ở ĐÂY (Xóa chữ D) ==========
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + userId));
 
         Set<Role> newRoles = request.getRoles().stream()
@@ -61,6 +70,10 @@ public class UserService {
                     try {
                         return Role.valueOf(roleName.toUpperCase());
                     } catch (IllegalArgumentException e) {
+<<<<<<< HEAD
+=======
+                        // ========== SỬA LỖI Ở ĐÂY (Xóa chữ D) ==========
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
                         throw new RuntimeException("Vai trò không hợp lệ: " + roleName);
                     }
                 })

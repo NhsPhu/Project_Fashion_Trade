@@ -48,10 +48,15 @@ public class ProfileResponseDTO {
         }
 
         if (addresses != null) {
+<<<<<<< HEAD
             Long shippingId = userProfile != null ? userProfile.getDefaultShippingAddressId() : null;
             Long billingId = userProfile != null ? userProfile.getDefaultBillingAddressId() : null;
             dto.setAddresses(addresses.stream()
                     .map(address -> AddressResponseDTO.fromAddress(address, shippingId, billingId))
+=======
+            dto.setAddresses(addresses.stream()
+                    .map(AddressResponseDTO::fromAddress)
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
                     .collect(Collectors.toSet()));
         }
 

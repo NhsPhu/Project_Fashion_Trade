@@ -8,10 +8,7 @@ import com.example.fashion.entity.User;
 import com.example.fashion.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -23,9 +20,12 @@ public class AuthController {
         this.authService = authService;
     }
 
+<<<<<<< HEAD
     /**
      * API Đăng nhập cho User thường
      */
+=======
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         try {
@@ -46,9 +46,12 @@ public class AuthController {
         }
     }
 
+<<<<<<< HEAD
     /**
      * API Đăng ký cho Khách hàng
      */
+=======
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @PostMapping("/register")
     public ResponseEntity<?> registerCustomer(@RequestBody CustomerRegisterRequestDTO request) {
         try {
@@ -59,9 +62,12 @@ public class AuthController {
         }
     }
 
+<<<<<<< HEAD
     /**
      * API Đăng ký Super Admin
      */
+=======
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @PostMapping("/admin/register")
     public ResponseEntity<?> registerSuperAdmin(@RequestBody RegisterAdminRequest request) {
         try {

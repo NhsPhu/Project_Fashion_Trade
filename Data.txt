@@ -99,28 +99,48 @@ VALUES
 -- BƯỚC 9: ORDERS
 -- ==========================================================
 INSERT INTO orders (
+<<<<<<< HEAD
     id, order_no, user_id, total_amount, final_amount,
+=======
+    id, order_no, user_id, total_amount, final_amount, 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     order_code, status, customer_name, customer_phone,
     shipping_name, shipping_phone, shipping_address,  -- THÊM shipping_address
     shipping_address_line, shipping_city, shipping_district, shipping_province,
     order_status, pay_status, created_at, updated_at
 ) VALUES
+<<<<<<< HEAD
 (1, 'ORD-20251114-001', 4, 299000, 299000,
+=======
+(1, 'ORD-20251114-001', 4, 299000, 299000, 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
  'ORD-20251114-001', 'ACTIVE', 'Nguyễn Văn A', '0912345678',
  'Nguyễn Văn A', '0912345678', '123 Đường Láng, Hà Nội',  -- THÊM: shipping_address = shipping_address_line
  '123 Đường Láng, Hà Nội', 'Hà Nội', 'Đống Đa', 'Hà Nội',
  'Pending', 'Pending', NOW(), NOW()),
+<<<<<<< HEAD
 (2, 'ORD-20251114-002', 4, 899000, 899000,
+=======
+(2, 'ORD-20251114-002', 4, 899000, 899000, 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
  'ORD-20251114-002', 'ACTIVE', 'Nguyễn Văn A', '0912345678',
  'Nguyễn Văn A', '0912345678', '456 Lê Lợi, TP.HCM',
  '456 Lê Lợi, TP.HCM', 'TP.HCM', 'Quận 1', 'TP.HCM',
  'Pending', 'Pending', NOW(), NOW()),
+<<<<<<< HEAD
 (3, 'ORD-20251114-003', 4, 1500000, 1500000,
+=======
+(3, 'ORD-20251114-003', 4, 1500000, 1500000, 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
  'ORD-20251114-003', 'ACTIVE', 'Nguyễn Văn A', '0912345678',
  'Nguyễn Văn A', '0912345678', '789 Trần Phú, Đà Nẵng',
  '789 Trần Phú, Đà Nẵng', 'Đà Nẵng', 'Hải Châu', 'Đà Nẵng',
  'Pending', 'Pending', NOW(), NOW()),
+<<<<<<< HEAD
 (4, 'ORD-20251114-004', 4, 999000, 999000,
+=======
+(4, 'ORD-20251114-004', 4, 999000, 999000, 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
  'ORD-20251114-004', 'ACTIVE', 'Nguyễn Văn A', '0912345678',
  'Nguyễn Văn A', '0912345678', '101 Nguyễn Huệ, Huế',
  '101 Nguyễn Huệ, Huế', 'Thừa Thiên Huế', 'TP Huế', 'Thừa Thiên Huế',
@@ -166,9 +186,15 @@ ON DUPLICATE KEY UPDATE
 -- ==========================================================
 -- BƯỚC 13: COUPON
 -- ==========================================================
+<<<<<<< HEAD
 INSERT IGNORE INTO coupon
 (id, code, type, value, min_order_value, start_date, end_date, usage_limit, used_count, active)
 VALUES
+=======
+INSERT IGNORE INTO coupon 
+(id, code, type, value, min_order_value, start_date, end_date, usage_limit, used_count, active) 
+VALUES 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 (1, 'SALE10', 'PERCENT', 10.00, 500000.00, '2025-11-01 00:00:00', '2025-12-31 23:59:59', 100, 0, true),
 (2, 'FREESHIP', 'FREE_SHIPPING', 0.00, 300000.00, '2025-11-01 00:00:00', '2025-12-31 23:59:59', 50, 0, true);
 
@@ -178,6 +204,7 @@ VALUES
 
 -- 1. Thêm cột 2FA vào bảng users (chỉ thêm nếu chưa tồn tại)
 SET @column_exists = (
+<<<<<<< HEAD
     SELECT COUNT(*)
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()
@@ -187,6 +214,17 @@ SET @column_exists = (
 
 SET @sql = IF(@column_exists = 0,
     'ALTER TABLE users ADD COLUMN two_factor_secret VARCHAR(255) NULL',
+=======
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'users' 
+      AND COLUMN_NAME = 'two_factor_secret'
+);
+
+SET @sql = IF(@column_exists = 0, 
+    'ALTER TABLE users ADD COLUMN two_factor_secret VARCHAR(255) NULL', 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     'SELECT ''Column two_factor_secret already exists'' AS message'
 );
 PREPARE stmt FROM @sql;
@@ -194,6 +232,7 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 SET @column_exists = (
+<<<<<<< HEAD
     SELECT COUNT(*)
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()
@@ -203,6 +242,17 @@ SET @column_exists = (
 
 SET @sql = IF(@column_exists = 0,
     'ALTER TABLE users ADD COLUMN two_factor_enabled BOOLEAN DEFAULT FALSE',
+=======
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'users' 
+      AND COLUMN_NAME = 'two_factor_enabled'
+);
+
+SET @sql = IF(@column_exists = 0, 
+    'ALTER TABLE users ADD COLUMN two_factor_enabled BOOLEAN DEFAULT FALSE', 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     'SELECT ''Column two_factor_enabled already exists'' AS message'
 );
 PREPARE stmt FROM @sql;
@@ -267,6 +317,7 @@ CREATE TABLE IF NOT EXISTS blog_posts (
 
 -- 6. Mở rộng bảng reviews (thêm cột nếu chưa có)
 SET @column_exists = (
+<<<<<<< HEAD
     SELECT COUNT(*)
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE()
@@ -276,12 +327,27 @@ SET @column_exists = (
 
 SET @sql = IF(@column_exists = 0,
     'ALTER TABLE reviews
+=======
+    SELECT COUNT(*) 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE TABLE_SCHEMA = DATABASE() 
+      AND TABLE_NAME = 'reviews' 
+      AND COLUMN_NAME = 'approved'
+);
+
+SET @sql = IF(@column_exists = 0, 
+    'ALTER TABLE reviews 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
      ADD COLUMN approved BOOLEAN DEFAULT FALSE,
      ADD COLUMN hidden BOOLEAN DEFAULT FALSE,
      ADD COLUMN admin_reply TEXT,
      ADD COLUMN reviewed_by BIGINT,
      ADD COLUMN reviewed_at DATETIME,
+<<<<<<< HEAD
      ADD FOREIGN KEY (reviewed_by) REFERENCES users(id)',
+=======
+     ADD FOREIGN KEY (reviewed_by) REFERENCES users(id)', 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     'SELECT ''Review columns already exist'' AS message'
 );
 PREPARE stmt FROM @sql;
@@ -327,12 +393,20 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- 10. Bổ sung quyền mẫu cho Super Admin (nếu chưa có)
+<<<<<<< HEAD
 INSERT IGNORE INTO user_permissions (user_id, permission)
+=======
+INSERT IGNORE INTO user_permissions (user_id, permission) 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 SELECT 1, 'CMS_PAGE_WRITE' WHERE NOT EXISTS (
     SELECT 1 FROM user_permissions WHERE user_id = 1 AND permission = 'CMS_PAGE_WRITE'
 );
 
+<<<<<<< HEAD
 INSERT IGNORE INTO user_permissions (user_id, permission)
+=======
+INSERT IGNORE INTO user_permissions (user_id, permission) 
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 SELECT 1, 'REVIEW_APPROVE' WHERE NOT EXISTS (
     SELECT 1 FROM user_permissions WHERE user_id = 1 AND permission = 'REVIEW_APPROVE'
 );

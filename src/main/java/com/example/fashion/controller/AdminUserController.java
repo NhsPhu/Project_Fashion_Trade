@@ -3,7 +3,7 @@ package com.example.fashion.controller;
 import com.example.fashion.dto.UpdateUserRolesRequest;
 import com.example.fashion.dto.UpdateUserStatusRequest;
 import com.example.fashion.dto.UserResponseDTO;
-import com.example.fashion.security.UserService;
+import com.example.fashion.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

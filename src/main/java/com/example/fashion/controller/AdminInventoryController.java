@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+// src/main/java/com/example/fashion/controller/AdminInventoryController.java
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 package com.example.fashion.controller;
 
 import com.example.fashion.dto.InventoryRequestDTO;
@@ -14,9 +18,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/inventory")
 @RequiredArgsConstructor
+<<<<<<< HEAD
 // --- [SỬA TẠI ĐÂY] ---
 @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'PRODUCT_MANAGER')")
 // ---------------------
+=======
+@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'PRODUCT_MANAGER')")
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 public class AdminInventoryController {
 
     private final InventoryService inventoryService;
@@ -39,6 +47,10 @@ public class AdminInventoryController {
         return ResponseEntity.ok(inventoryService.getStock(variantId, warehouseId));
     }
 
+<<<<<<< HEAD
+=======
+    // THÊM MỚI: LẤY TẤT CẢ TỒN KHO
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @GetMapping("/all")
     public ResponseEntity<List<InventoryResponseDTO.LowStockItem>> getAllStock() {
         return ResponseEntity.ok(inventoryService.getAllStock());

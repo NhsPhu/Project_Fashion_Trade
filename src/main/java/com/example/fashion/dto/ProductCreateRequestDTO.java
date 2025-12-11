@@ -1,30 +1,37 @@
+// src/main/java/com/example/fashion/dto/ProductCreateRequestDTO.java
 package com.example.fashion.dto;
 
-import lombok.Getter;
-import lombok.Setter;
-import java.util.Set;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-@Getter
-@Setter
+import java.math.BigDecimal;
+import java.util.List;
+
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@SuperBuilder(toBuilder = true) // DÙNG @SuperBuilder
 public class ProductCreateRequestDTO {
-    // Thông tin Product
+
     private String name;
     private String slug;
     private String description;
-    private String status; // "Draft", "Published"
+    private String shortDescription;
+    private String status;
     private String defaultImage;
-
-    // ID của Category và Brand
-    private Long categoryId;
-    private Long brandId;
-
-    // Thông tin SEO
     private String seoMetaTitle;
     private String seoMetaDesc;
 
-    // Danh sách các biến thể
-    private Set<ProductVariantRequestDTO> variants;
+    private Long categoryId;
+    private Long brandId;
 
-    // Danh sách các hình ảnh
-    private Set<ProductImageRequestDTO> images;
+    private List<ProductVariantRequestDTO> variants;
+
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor @SuperBuilder
+    public static class ProductVariantRequestDTO {
+        private String sku;
+        private String attributes;
+        private BigDecimal price;
+        private BigDecimal salePrice;
+        private Integer stockQuantity;
+        private Double weight;
+    }
 }

@@ -1,42 +1,46 @@
 package com.example.fashion.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "product_variants")
-@Getter
-@Setter
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ProductVariant {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Mối quan hệ: Nhiều Biến thể thuộc 1 Sản phẩm
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
     @Column(name = "sku", unique = true, length = 100)
-    private String sku; // Mã định danh duy nhất cho biến thể
+    private String sku;
 
+<<<<<<< HEAD
 
     // Chúng ta lưu dưới dạng String (JSON) và xử lý ở tầng service
+=======
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @Column(name = "attributes", columnDefinition = "TEXT")
     private String attributes;
 
-    @Column(name = "price", precision = 10, scale = 2)
-    private BigDecimal price; // Giá gốc
+    @Column(name = "price", precision = 12, scale = 2)
+    private BigDecimal price;
 
-    @Column(name = "sale_price", precision = 10, scale = 2)
-    private BigDecimal salePrice; // Giá khuyến mãi
+    @Column(name = "sale_price", precision = 12, scale = 2)
+    private BigDecimal salePrice;
 
     @Column(name = "stock_quantity", nullable = false)
+<<<<<<< HEAD
     private Integer stockQuantity;
+=======
+    @Builder.Default
+    private Integer stockQuantity = 0;
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 
     @Column(name = "weight")
     private Double weight;

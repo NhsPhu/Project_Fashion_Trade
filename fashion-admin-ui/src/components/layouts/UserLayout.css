@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* src/user/components/layout/UserLayout.css */
 
 .user-layout {
@@ -16,4 +17,98 @@
     background: #f8f9fa;
     padding: 24px 0;
     color: #666;
+=======
+.user-layout {
+  min-height: 100vh;
+  background-color: #ffffff; /* Nền trắng cho nội dung */
+}
+
+/* 1. Header (Thanh Menu) */
+.user-header {
+  background: #fff !important; /* Header màu trắng */
+  padding: 0 24px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); /* Bóng mờ nhẹ */
+  position: sticky; /* Dính lại khi cuộn */
+  top: 0;
+  z-index: 10;
+}
+
+.user-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  max-width: 1200px; /* Giới hạn chiều rộng */
+  margin: 0 auto;
+}
+
+/* 2. Logo */
+.user-logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: #d4380d !important; /* Màu cam đỏ */
+  text-decoration: none;
+  line-height: 1;
+  margin-right: 32px; /* Khoảng cách với menu */
+}
+
+/* 3. Menu chính */
+.user-nav-menu.ant-menu {
+  border-bottom: none !important; /* Bỏ đường gạch chân của menu */
+  flex: 1; /* Tự động chiếm không gian */
+  justify-content: flex-start; /* Bắt đầu từ bên trái (thay vì center) */
+  line-height: 62px; /* Căn giữa chiều cao header */
+}
+
+.user-nav-menu .ant-menu-item {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+/* 4. Các nút hành động (Giỏ hàng, Yêu thích...) */
+.user-action-group {
+  display: flex;
+  align-items: center;
+}
+
+.user-action-group .ant-space-item {
+  display: flex;
+  align-items: center;
+}
+
+/* Tùy chỉnh icon */
+.user-action-group .anticon {
+  font-size: 22px;
+  color: #333; /* Màu icon đậm hơn */
+}
+
+/* Link icon (cho trái tim, giỏ hàng) */
+.user-action-icon {
+  color: #333;
+  padding: 0 8px;
+}
+.user-action-icon:hover {
+  color: #d4380d;
+}
+
+
+/* 5. Nội dung */
+.user-content {
+  /* Đặt padding ở đây để nội dung không bị dính vào viền */
+  padding: 24px;
+  min-height: calc(100vh - 64px - 70px); /* (Header - Footer) */
+
+  /* Căn giữa nội dung */
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* 6. Footer */
+.user-footer {
+  text-align: center;
+  background: #f0f0f0; /* Màu xám nhạt */
+  padding: 24px 0;
+  color: #888;
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 }

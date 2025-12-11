@@ -3,6 +3,7 @@ package com.example.fashion.service;
 import com.example.fashion.entity.User;
 import com.example.fashion.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,38 +11,70 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    // 1. Xóa @Autowired ở đây và làm cho nó 'final'
     private final UserRepository userRepository;
 
-    // 2. Tạo hàm khởi tạo (constructor) để Spring tự động "tiêm" (inject) UserRepository
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @Autowired
     public CustomUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository; // Cảnh báo "never assigned" sẽ biến mất
+        this.userRepository = userRepository;
     }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // Tìm user bằng email
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + email));
 
-        // Chuyển đổi Set<Role> (Enum) thành Set<GrantedAuthority>
-        Set<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.name()))
-                .collect(Collectors.toSet());
+        Set<GrantedAuthority> authorities = Stream.concat(
+                user.getRoles().stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name())),
+                user.getPermissions().stream()
+                        .map(perm -> new SimpleGrantedAuthority(perm.name()))
+        ).collect(Collectors.toSet());
 
-        // Trả về đối tượng UserDetails mà Spring Security hiểu
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPasswordHash(),
-                authorities
-        );
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getEmail())
+                .password(user.getPasswordHash())
+                .authorities(authorities)
+                .accountExpired(false)
+                .accountLocked(!"active".equals(user.getStatus()))
+                .credentialsExpired(false)
+                .disabled(!"active".equals(user.getStatus()))
+                .build();
+    }
+
+    // FILE HOÀN CHỈNH CUỐI CÙNG – ĐÃ SỬA getName() → fullName + LOG CHI TIẾT
+    public List<Long> getAllowedWarehouseIdsByEmail(String email) {
+        System.out.println(">>> [WAREHOUSE] Bắt đầu lấy kho cho email: " + email);
+
+        return userRepository.findByEmail(email)
+                .map(user -> {
+                    Long userId = user.getId();
+                    String fullName = user.getFullName() != null ? user.getFullName() : "N/A";
+
+                    System.out.println(">>> [WAREHOUSE] Tìm thấy user - ID = " + userId + " | FullName = " + fullName + " | Email = " + user.getEmail());
+
+                    List<Long> warehouses = jdbcTemplate.queryForList(
+                            "SELECT warehouse_id FROM user_warehouse_access WHERE user_id = ?",
+                            Long.class,
+                            userId
+                    );
+
+                    System.out.println(">>> [WAREHOUSE] Kết quả truy vấn kho: " + warehouses);
+                    return warehouses;
+                })
+                .orElseGet(() -> {
+                    System.out.println(">>> [WAREHOUSE] Không tìm thấy user với email: " + email);
+                    return List.of();
+                });
     }
 }

@@ -1,5 +1,6 @@
 // src/App.js
 import React from 'react';
+<<<<<<< HEAD
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // Import Contexts
@@ -38,6 +39,26 @@ function App() {
                 />
             </Routes>
         </BrowserRouter>
+=======
+
+// 1. SỬA: Chỉ import 1 AuthProvider HỢP NHẤT
+import { AuthProvider } from './contexts/AuthContext';
+// 2. XÓA: UserAuthProvider
+import { UserCartProvider } from './contexts/UserCartContext';
+
+import AppRoutes from './routes/AppRoutes'; // Import bộ định tuyến Gốc
+import 'antd/dist/reset.css';
+import './index.css';
+
+function App() {
+    return (
+        // 3. SỬA: Chỉ dùng AuthProvider HỢP NHẤT
+        <AuthProvider>
+            <UserCartProvider>
+                <AppRoutes />
+            </UserCartProvider>
+        </AuthProvider>
+>>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     );
 }
 
