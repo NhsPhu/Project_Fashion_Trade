@@ -4,104 +4,65 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenProvider {
 
-    // KEY CỐ ĐỊNH – KHÔNG BAO GIỜ ĐỔI KHI RESTART (đã thay cho dòng cũ)
-    private final SecretKey jwtSecretKey = Keys.hmacShaKeyFor(
-            "myVeryLongSecretKeyForFashionEcommerce2025ThisMustBeAtLeast512Bits1234567890abc".getBytes()
-    );
+    // (1) Tạo một khóa bí mật (Secret Key) an toàn.
+    // Trong thực tế, khóa này nên được đọc từ file config
+    private final SecretKey jwtSecretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
 
-    // Thời gian hết hạn token: 24h
-    private final long jwtExpirationInMs = 24 * 60 * 60 * 1000L;
+    // (2) Thời gian hết hạn của Token (ví dụ: 1 ngày)
+    private final long jwtExpirationInMs = 86400000; // 1 day = 24 * 60 * 60 * 1000
 
+    /**
+     * Tạo ra một JWT từ thông tin xác thực của người dùng
+     */
     public String generateToken(Authentication authentication) {
+
         String email = authentication.getName();
 
+        // Lấy danh sách các quyền (roles) của người dùng
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
-        List<Integer> allowedWarehouses = resolveAllowedWarehouses(authentication);
-
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
 
+        // (3) Tạo Token
         return Jwts.builder()
-                .setSubject(email)
-                .claim("roles", authorities)
-                .claim("allowedWarehouses", allowedWarehouses)
+                .setSubject(email) // Gán email vào "subject"
+                .claim("roles", authorities) // Thêm thông tin "roles" vào token
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(jwtSecretKey, SignatureAlgorithm.HS512)
+                .signWith(jwtSecretKey, SignatureAlgorithm.HS512) // Ký tên bằng khóa bí mật
                 .compact();
     }
 
-    @SuppressWarnings("unchecked")
-    private List<Integer> resolveAllowedWarehouses(Authentication authentication) {
-        Object principal = authentication.getPrincipal();
-        if (principal != null) {
-            try {
-                Method m = principal.getClass().getMethod("getAllowedWarehouses");
-                Object value = m.invoke(principal);
-                if (value instanceof Collection<?>) {
-                    return ((Collection<?>) value).stream()
-                            .map(v -> {
-                                if (v instanceof Number) return ((Number) v).intValue();
-                                try { return Integer.parseInt(String.valueOf(v)); }
-                                catch (NumberFormatException ex) { return null; }
-                            })
-                            .filter(v -> v != null)
-                            .collect(Collectors.toList());
-                }
-            } catch (NoSuchMethodException ignore) {
-            } catch (Exception ex) {
-                System.out.println("Không thể trích xuất allowedWarehouses từ principal: " + ex.getMessage());
-            }
-        }
-
-        Object details = authentication.getDetails();
-        if (details instanceof Map) {
-            Map<?, ?> map = (Map<?, ?>) details;
-            Object value = map.get("allowedWarehouses");
-            if (value instanceof Collection<?>) {
-                return ((Collection<?>) value).stream()
-                        .map(v -> {
-                            if (v instanceof Number) return ((Number) v).intValue();
-                            try { return Integer.parseInt(String.valueOf(v)); }
-                            catch (NumberFormatException ex) { return null; }
-                        })
-                        .filter(v -> v != null)
-                        .collect(Collectors.toList());
-            }
-        }
-
-        return Collections.emptyList();
-    }
-
+    /**
+     * Lấy email (subject) từ JWT
+     */
     public String getEmailFromJWT(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(jwtSecretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+
         return claims.getSubject();
     }
 
+    /**
+     * Xác thực Token
+     */
     public boolean validateToken(String authToken) {
         try {
             Jwts.parserBuilder()
@@ -110,6 +71,7 @@ public class JwtTokenProvider {
                     .parseClaimsJws(authToken);
             return true;
         } catch (Exception ex) {
+            // (Nên log lỗi ở đây: Token không hợp lệ, hết hạn, v.v.)
             System.out.println("Lỗi xác thực JWT: " + ex.getMessage());
         }
         return false;

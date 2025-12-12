@@ -15,11 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/coupons")
 @RequiredArgsConstructor
-<<<<<<< HEAD
 @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ADMIN')")
-=======
-@PreAuthorize("hasRole('SUPER_ADMIN') OR hasRole('ADMIN')")
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 public class AdminCouponController {
 
     private final CouponService couponService;

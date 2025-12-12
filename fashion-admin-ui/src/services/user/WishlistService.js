@@ -8,7 +8,6 @@ const WishlistService = {
     return res.data;
   },
 
-<<<<<<< HEAD
   // ĐÃ SỬA: Bắt lỗi 409 khi sản phẩm đã có trong wishlist
   addToWishlist: async (productId) => {
     try {
@@ -22,10 +21,6 @@ const WishlistService = {
       // Các lỗi khác (500, 401, v.v.)
       throw new Error(error.response?.data?.message || 'Không thể thêm vào danh sách yêu thích');
     }
-=======
-  addToWishlist: async (productId) => {
-    await userApiClient.post(`/user/wishlist/${productId}`);
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
   },
 
   removeFromWishlist: async (productId) => {

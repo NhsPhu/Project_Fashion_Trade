@@ -20,15 +20,11 @@ public class OrderResponseDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // Thông tin User
     private Long userId;
     private String userEmail;
 
-<<<<<<< HEAD
     // Thông tin đơn hàng
-=======
-    private String customerName; // Từ customer_name (DB) → ưu tiên, nếu null thì dùng shipping_name
-
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     private BigDecimal totalAmount;
     private BigDecimal finalAmount;
     private BigDecimal shippingFee;
@@ -48,12 +44,9 @@ public class OrderResponseDTO {
 
     private Set<OrderItemResponseDTO> items;
 
-<<<<<<< HEAD
     /**
      * Chuyển đổi từ Entity Order → DTO
      */
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     public static OrderResponseDTO fromOrder(Order order) {
         OrderResponseDTO dto = new OrderResponseDTO();
         dto.setId(order.getId());
@@ -66,10 +59,7 @@ public class OrderResponseDTO {
         // SỬA LỖI 2: Xóa "npm" bị gõ thừa
         dto.setUpdatedAt(order.getUpdatedAt());
 
-<<<<<<< HEAD
         // Xử lý User bị xóa (tránh lỗi LazyInitialization / EntityNotFound)
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         try {
             if (order.getUser() != null) {
                 dto.setUserId(order.getUser().getId());
@@ -79,16 +69,6 @@ public class OrderResponseDTO {
             dto.setUserId(null);
             dto.setUserEmail("[Người dùng đã bị xóa]");
         }
-<<<<<<< HEAD
-=======
-
-        // SỬA: Ưu tiên customer_name → shipping_name → "Khách lẻ"
-        String name = order.getCustomerName();
-        if (name == null || name.trim().isEmpty()) {
-            name = order.getShippingName();
-        }
-        dto.setCustomerName(name != null && !name.trim().isEmpty() ? name.trim() : "Khách lẻ");
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 
         // Các trường còn lại
         dto.setTotalAmount(order.getTotalAmount());

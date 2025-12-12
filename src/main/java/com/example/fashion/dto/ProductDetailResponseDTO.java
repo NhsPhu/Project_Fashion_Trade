@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-// src/main/java/com/example/fashion/dto/ProductDetailResponseDTO.java
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 package com.example.fashion.dto;
 
 import com.example.fashion.entity.Product;
@@ -48,10 +44,7 @@ public class ProductDetailResponseDTO {
         if (product.getCategory() != null) {
             dto.setCategoryName(product.getCategory().getName());
         }
-<<<<<<< HEAD
 
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         if (product.getBrand() != null) {
             dto.setBrandName(product.getBrand().getName());
         }
@@ -60,19 +53,12 @@ public class ProductDetailResponseDTO {
             dto.setVariants(product.getVariants().stream()
                     .map(ProductVariantResponseDTO::fromProductVariant)
                     .collect(Collectors.toSet()));
-<<<<<<< HEAD
             dto.setTotalStock(product.getVariants().stream()
                     .mapToInt(variant -> variant.getStockQuantity() != null ? variant.getStockQuantity() : 0)
-=======
-
-            dto.setTotalStock(product.getVariants().stream()
-                    .mapToInt(v -> v.getStockQuantity() != null ? v.getStockQuantity() : 0)
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
                     .sum());
 
             dto.setMinPrice(product.getVariants().stream()
                     .map(v -> v.getPrice() != null ? v.getPrice() : BigDecimal.ZERO)
-<<<<<<< HEAD
                     .min(BigDecimal::compareTo)
                     .orElse(BigDecimal.ZERO));
             dto.setMaxPrice(product.getVariants().stream()
@@ -105,52 +91,17 @@ public class ProductDetailResponseDTO {
                     .sum();
             dto.setReviewCount(reviewCount);
             dto.setAverageRating(reviewCount > 0 ? (double) totalRating / reviewCount : 0.0);
-=======
-                    .min(BigDecimal::compareTo).orElse(BigDecimal.ZERO));
-
-            dto.setMaxPrice(product.getVariants().stream()
-                    .map(v -> v.getPrice() != null ? v.getPrice() : BigDecimal.ZERO)
-                    .max(BigDecimal::compareTo).orElse(BigDecimal.ZERO));
-
-            dto.setMinSalePrice(product.getVariants().stream()
-                    .map(v -> v.getSalePrice() != null ? v.getSalePrice() : BigDecimal.ZERO)
-                    .filter(p -> p.compareTo(BigDecimal.ZERO) > 0)
-                    .min(BigDecimal::compareTo).orElse(null));
-
-            dto.setMaxSalePrice(product.getVariants().stream()
-                    .map(v -> v.getSalePrice() != null ? v.getSalePrice() : BigDecimal.ZERO)
-                    .filter(p -> p.compareTo(BigDecimal.ZERO) > 0)
-                    .max(BigDecimal::compareTo).orElse(null));
-        }
-
-        // Không có entity ProductImage → trả rỗng, build pass
-        dto.setImages(java.util.Set.of());
-
-        // Reviews
-        if (reviewEntities != null && !reviewEntities.isEmpty()) {
-            dto.setReviewCount(reviewEntities.size());
-            double avg = reviewEntities.stream().mapToInt(Review::getRating).average().orElse(0.0);
-            dto.setAverageRating(avg);
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
             dto.setReviews(reviewEntities.stream()
                     .map(ReviewResponseDTO::fromReview)
                     .collect(Collectors.toSet()));
         } else {
             dto.setReviewCount(0);
             dto.setAverageRating(0.0);
-<<<<<<< HEAD
-=======
-            dto.setReviews(Set.of());
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         }
 
         return dto;
     }
-<<<<<<< HEAD
 }
 
 
 
-=======
-}
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22

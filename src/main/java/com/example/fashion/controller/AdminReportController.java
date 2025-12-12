@@ -21,11 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 // SỬA LỖI: Dùng các vai trò có thật (PRODUCT_MANAGER, ORDER_MANAGER) thay vì 'ADMIN'
 // Thêm hasAnyRole để khớp với SecurityConfig
-<<<<<<< HEAD
 @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'PRODUCT_MANAGER', 'ORDER_MANAGER')")
-=======
-@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'PRODUCT_MANAGER', 'ORDER_MANAGER')")
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 public class AdminReportController {
 
     private final ReportService reportService;

@@ -13,12 +13,8 @@ public class AddressRequestDTO {
     private String district;
     private String province;
     private String postalCode;
-<<<<<<< HEAD
     private boolean defaultShipping;
     private boolean defaultBilling;
-=======
-    private boolean isDefault;
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 }
 
 

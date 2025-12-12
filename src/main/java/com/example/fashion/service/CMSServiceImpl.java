@@ -4,11 +4,7 @@ import com.example.fashion.dto.CMSRequestDTO;
 import com.example.fashion.dto.CMSResponseDTO;
 import com.example.fashion.entity.StaticPage;
 import com.example.fashion.repository.StaticPageRepository;
-<<<<<<< HEAD
 import com.example.fashion.repository.UserRepository;
-=======
-import com.example.fashion.service.CMSService;
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,11 +13,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-<<<<<<< HEAD
 public class CMSServiceImpl implements UserRepository.CMSService {
-=======
-public class CMSServiceImpl implements CMSService {
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 
     private final StaticPageRepository repository;
 

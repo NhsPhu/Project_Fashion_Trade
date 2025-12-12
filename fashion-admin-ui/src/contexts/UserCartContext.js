@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { message } from 'antd';
@@ -10,27 +9,10 @@ const CartContext = createContext();
 
 // === HÀM PHỤ TRỢ ===
 const generateSessionId = () => crypto?.randomUUID?.() ?? `sid_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-=======
-// src/contexts/UserCartContext.js
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
-import UserCartService from '../services/user/UserCartService';
-// 1. SỬA LỖI: Import hook 'useAuth' HỢP NHẤT
-import { useAuth } from './AuthContext';
-import { SESSION_KEY } from '../services/user/httpClient';
-
-const CartContext = createContext();
-
-const generateSessionId = () => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-  return `sid_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-};
-
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 const loadSessionId = () => {
   const existing = localStorage.getItem(SESSION_KEY);
   if (existing) return existing;
   const newId = generateSessionId();
-<<<<<<< HEAD
   try { localStorage.setItem(SESSION_KEY, newId); } catch {}
   return newId;
 };
@@ -59,41 +41,18 @@ const normalizeCartResponse = (res) => {
   };
 };
 
-=======
-  try {
-    localStorage.setItem(SESSION_KEY, newId);
-  } catch (e) {
-    // ignore
-  }
-  return newId;
-};
-
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 export const UserCartProvider = ({ children }) => {
   const [cart, setCart] = useState(null);
   const [sessionId, setSessionId] = useState(loadSessionId());
   const [isLoading, setIsLoading] = useState(false);
-<<<<<<< HEAD
   const { token } = useUserAuth();
 
   const getSessionId = useCallback(() => token ? null : sessionId, [token, sessionId]);
-=======
-
-  // 2. SỬA LỖI: Lấy token từ hook 'useAuth' HỢP NHẤT
-  const { token } = useAuth();
-
-  // BỌC getSessionId TRONG useCallback ĐỂ TRÁNH LỖI DEPENDENCY
-  const getSessionId = useCallback(() => {
-    // 3. SỬA LỖI: Logic giữ nguyên, chỉ là tên biến token
-    return token ? null : sessionId;
-  }, [token, sessionId]);
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 
   const syncCart = useCallback(async () => {
     setIsLoading(true);
     try {
       const sid = getSessionId();
-<<<<<<< HEAD
       const res = await UserCartService.getCart(sid);
       const norm = normalizeCartResponse(res);
       if (!token && norm?.sessionId) {
@@ -103,21 +62,10 @@ export const UserCartProvider = ({ children }) => {
       setCart(norm);
     } catch (e) {
       console.error('Sync cart error:', e);
-=======
-      const response = await UserCartService.getCart(sid);
-      if (!sid && response.sessionId) {
-        localStorage.setItem(SESSION_KEY, response.sessionId);
-        setSessionId(response.sessionId);
-      }
-      setCart(response);
-    } catch (error) {
-      console.error('Error loading cart:', error);
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
       setCart({ items: [], totalAmount: 0, totalItems: 0 });
     } finally {
       setIsLoading(false);
     }
-<<<<<<< HEAD
   }, [getSessionId, token]);
 
   useEffect(() => { syncCart(); }, [token, syncCart]);
@@ -195,58 +143,6 @@ export const UserCartProvider = ({ children }) => {
   }), [cart, sessionId, isLoading, syncCart, addItem, updateQuantity, removeItem, clearCart]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-=======
-  }, [getSessionId]); // ĐÃ THÊM getSessionId
-
-  useEffect(() => {
-    syncCart();
-  }, [syncCart]);
-
-  const addItem = useCallback(async (payload) => {
-    const sid = getSessionId();
-    const response = await UserCartService.addItem(sid, payload);
-    if (!sid && response.sessionId) {
-      localStorage.setItem(SESSION_KEY, response.sessionId);
-      setSessionId(response.sessionId);
-    }
-    setCart(response);
-  }, [getSessionId]);
-
-  const updateItem = useCallback(async (itemId, quantity) => {
-    const sid = getSessionId();
-    const response = await UserCartService.updateItem(sid, itemId, quantity);
-    setCart(response);
-  }, [getSessionId]);
-
-  const removeItem = useCallback(async (itemId) => {
-    const sid = getSessionId();
-    await UserCartService.removeItem(sid, itemId);
-    await syncCart();
-  }, [getSessionId, syncCart]);
-
-  const clearCart = useCallback(async () => {
-    const sid = getSessionId();
-    await UserCartService.clearCart(sid);
-    setCart({ items: [], totalAmount: 0, totalItems: 0 });
-  }, [getSessionId]);
-
-  const value = useMemo(() => ({
-    cart,
-    sessionId,
-    isLoading,
-    syncCart,
-    addItem,
-    updateItem,
-    removeItem,
-    clearCart,
-  }), [cart, sessionId, isLoading, syncCart, addItem, updateItem, removeItem, clearCart]);
-
-  return (
-      <CartContext.Provider value={value}>
-        {children}
-      </CartContext.Provider>
-  );
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 };
 
 export const useUserCart = () => useContext(CartContext);

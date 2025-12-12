@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // src/services/UserService.js
 import { apiClient } from '../AuthService';
 
@@ -41,21 +40,3 @@ const UserService = {
 };
 
 export default UserService;
-=======
-// src/services/user/BrandService.js
-import { userApiClient } from './httpClient';
-
-const BrandService = {
-    getAll: async () => {
-        const response = await userApiClient.get('/public/brands');
-        return response.data;
-    },
-
-    getBySlug: async (slug) => {
-        const response = await userApiClient.get(`/public/brands/${slug}`);
-        return response.data;
-    },
-};
-
-export default BrandService;
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22

@@ -6,16 +6,12 @@ import com.example.fashion.entity.Address;
 import com.example.fashion.entity.Order;
 import com.example.fashion.entity.User;
 import com.example.fashion.entity.UserProfile;
-<<<<<<< HEAD
 import com.example.fashion.repository.AddressRepository;
 import com.example.fashion.repository.OrderRepository;
 import com.example.fashion.repository.ReviewRepository;
 import com.example.fashion.repository.UserProfileRepository;
 import com.example.fashion.repository.UserRepository;
 import org.springframework.data.jpa.domain.Specification;
-=======
-import com.example.fashion.repository.*;
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,12 +41,9 @@ public class UserProfileService {
         this.userProfileRepository = userProfileRepository;
     }
 
-<<<<<<< HEAD
     /**
      * Lấy thông tin profile của user
      */
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @Transactional(readOnly = true)
     public ProfileResponseDTO getProfile(Long userId) {
         User user = userRepository.findById(userId)
@@ -60,22 +53,16 @@ public class UserProfileService {
         return ProfileResponseDTO.fromUser(user, userProfile, addresses);
     }
 
-<<<<<<< HEAD
     /**
      * Cập nhật thông tin profile
      * → DỰA TRÊN ProfileUpdateRequestDTO (chỉ có fullName, phone, avatar)
      */
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @Transactional
     public ProfileResponseDTO updateProfile(Long userId, ProfileUpdateRequestDTO request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user ID: " + userId));
 
-<<<<<<< HEAD
         // Cập nhật User
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         if (request.getFullName() != null && !request.getFullName().trim().isEmpty()) {
             user.setFullName(request.getFullName().trim());
         }
@@ -85,10 +72,7 @@ public class UserProfileService {
 
         userRepository.save(user);
 
-<<<<<<< HEAD
         // Cập nhật UserProfile (chỉ avatar)
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     UserProfile newProfile = new UserProfile();
@@ -105,7 +89,6 @@ public class UserProfileService {
         return getProfile(userId);
     }
 
-<<<<<<< HEAD
     /**
      * Lấy danh sách địa chỉ
      */
@@ -123,26 +106,14 @@ public class UserProfileService {
     /**
      * Thêm địa chỉ mới
      */
-=======
-    @Transactional(readOnly = true)
-    public List<AddressResponseDTO> getAddresses(Long userId) {
-        return addressRepository.findByUserId(userId).stream()
-                .map(AddressResponseDTO::fromAddress)
-                .collect(Collectors.toList());
-    }
-
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @Transactional
     public AddressResponseDTO addAddress(Long userId, AddressRequestDTO request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user ID: " + userId));
 
-<<<<<<< HEAD
         UserProfile profile = userProfileRepository.findByUserId(userId)
                 .orElseGet(() -> createProfile(user));
 
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         Address address = new Address();
         address.setUser(user);
         address.setName(request.getName());
@@ -152,7 +123,6 @@ public class UserProfileService {
         address.setDistrict(request.getDistrict());
         address.setProvince(request.getProvince());
         address.setPostalCode(request.getPostalCode());
-<<<<<<< HEAD
         address.setDefault(request.isDefaultShipping() || request.isDefaultBilling());
 
         Address savedAddress = addressRepository.save(address);
@@ -165,23 +135,6 @@ public class UserProfileService {
     /**
      * Cập nhật địa chỉ
      */
-=======
-        address.setDefault(request.isDefault());
-
-        Address savedAddress = addressRepository.save(address);
-
-        if (address.isDefault()) {
-            userProfileRepository.findByUserId(userId).ifPresent(profile -> {
-                profile.setDefaultShippingAddressId(savedAddress.getId());
-                profile.setDefaultBillingAddressId(savedAddress.getId());
-                userProfileRepository.save(profile);
-            });
-        }
-
-        return AddressResponseDTO.fromAddress(savedAddress);
-    }
-
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @Transactional
     public AddressResponseDTO updateAddress(Long userId, Long addressId, AddressRequestDTO request) {
         Address address = addressRepository.findById(addressId)
@@ -198,7 +151,6 @@ public class UserProfileService {
         address.setDistrict(request.getDistrict());
         address.setProvince(request.getProvince());
         address.setPostalCode(request.getPostalCode());
-<<<<<<< HEAD
         address.setDefault(request.isDefaultShipping() || request.isDefaultBilling());
 
         Address updatedAddress = addressRepository.save(address);
@@ -214,23 +166,6 @@ public class UserProfileService {
     /**
      * Xóa địa chỉ
      */
-=======
-        address.setDefault(request.isDefault());
-
-        Address updatedAddress = addressRepository.save(address);
-
-        if (address.isDefault()) {
-            userProfileRepository.findByUserId(userId).ifPresent(profile -> {
-                profile.setDefaultShippingAddressId(updatedAddress.getId());
-                profile.setDefaultBillingAddressId(updatedAddress.getId());
-                userProfileRepository.save(profile);
-            });
-        }
-
-        return AddressResponseDTO.fromAddress(updatedAddress);
-    }
-
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @Transactional
     public void deleteAddress(Long userId, Long addressId) {
         Address address = addressRepository.findById(addressId)
@@ -253,44 +188,29 @@ public class UserProfileService {
         });
     }
 
-<<<<<<< HEAD
     /**
      * Lịch sử hoạt động: đơn hàng + đánh giá
      */
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     @Transactional(readOnly = true)
     public Map<String, Object> getActivityHistory(Long userId) {
         Map<String, Object> history = new LinkedHashMap<>();
 
-<<<<<<< HEAD
         // ĐƠN HÀNG: DÙNG Specification
         Specification<Order> orderSpec = (root, query, cb) ->
                 cb.equal(root.get("user").get("id"), userId);
 
         List<Order> orders = orderRepository.findAll(orderSpec);
-=======
-        // ĐÃ SỬA: Không dùng Specification nữa → build pass ngay
-        List<Order> orders = orderRepository.findAll().stream()
-                .filter(o -> o.getUser() != null && o.getUser().getId().equals(userId))
-                .collect(Collectors.toList());
-
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         history.put("orders", orders.stream()
                 .map(OrderResponseDTO::fromOrder)
                 .collect(Collectors.toList()));
 
-<<<<<<< HEAD
         // ĐÁNH GIÁ
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         history.put("reviews", reviewRepository.findByUserId(userId).stream()
                 .map(ReviewResponseDTO::fromReview)
                 .collect(Collectors.toList()));
 
         return history;
     }
-<<<<<<< HEAD
 
     private UserProfile createProfile(User user) {
         UserProfile profile = new UserProfile();
@@ -315,6 +235,4 @@ public class UserProfileService {
 
         userProfileRepository.save(profile);
     }
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 }

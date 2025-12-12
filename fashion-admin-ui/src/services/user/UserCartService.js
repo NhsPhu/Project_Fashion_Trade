@@ -22,12 +22,8 @@ const UserCartService = {
 
   removeItem: async (sessionId, itemId) => {
     const params = sessionId ? { sessionId } : {};
-<<<<<<< HEAD
     const response = await userApiClient.delete(`/user/cart/items/${itemId}`, { params });
     return response.data;
-=======
-    await userApiClient.delete(`/user/cart/items/${itemId}`, { params });
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
   },
 
   clearCart: async (sessionId) => {

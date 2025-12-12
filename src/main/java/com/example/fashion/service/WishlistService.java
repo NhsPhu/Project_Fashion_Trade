@@ -45,13 +45,6 @@ public class WishlistService {
 
     @Transactional
     public void addToWishlist(Long userId, Long productId) {
-<<<<<<< HEAD
-=======
-        if (wishlistItemRepository.findByUserIdAndProductId(userId, productId).isPresent()) {
-            throw new RuntimeException("Sản phẩm đã nằm trong danh sách yêu thích");
-        }
-
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
         Product product = productRepository.findById(productId)
@@ -60,17 +53,12 @@ public class WishlistService {
         WishlistItem item = new WishlistItem();
         item.setUser(user);
         item.setProduct(product);
-<<<<<<< HEAD
         wishlistItemRepository.save(item);
     }
 
     // THÊM MỚI
     public boolean isProductInWishlist(Long userId, Long productId) {
         return wishlistItemRepository.findByUserIdAndProductId(userId, productId).isPresent();
-=======
-
-        wishlistItemRepository.save(item);
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
     }
 
     @Transactional

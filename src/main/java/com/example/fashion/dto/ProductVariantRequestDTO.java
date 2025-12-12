@@ -1,12 +1,14 @@
-// src/main/java/com/example/fashion/dto/ProductVariantRequestDTO.java
 package com.example.fashion.dto;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.math.BigDecimal;
 
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
 public class ProductVariantRequestDTO {
     private String sku;
+    // JSON: {"color": "Red", "size": "L"}
     private String attributes;
     private BigDecimal price;
     private BigDecimal salePrice;

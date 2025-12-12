@@ -45,26 +45,4 @@ public class Review {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
-<<<<<<< HEAD
-=======
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
-    @Column(name = "approved")
-    private boolean approved = false;
-
-    @Column(name = "hidden")
-    private boolean hidden = false;
-
-    @Column(name = "admin_reply")
-    private String adminReply;
-
-    @Column(name = "reviewed_by")
-    private Long reviewedBy;
-
-    @Column(name = "reviewed_at")
-    private LocalDateTime reviewedAt;
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 }

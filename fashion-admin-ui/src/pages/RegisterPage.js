@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-// 1. SỬA: Import service HỢP NHẤT
+import { useNavigate, Link } from 'react-router-dom'; // 1. Import Link
 import AuthService from '../services/AuthService';
 import { Form, Input, Button, Card, Typography, notification } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, PhoneOutlined } from '@ant-design/icons';
@@ -14,6 +13,8 @@ function RegisterPage() {
     const onFinish = async (values) => {
         setLoading(true);
         try {
+            // 2. 'values' chứa (fullName, email, password, phone)
+            // (Chúng ta không cần gửi 'confirmPassword')
             const registerData = {
                 fullName: values.fullName,
                 email: values.email,
@@ -21,7 +22,6 @@ function RegisterPage() {
                 phone: values.phone
             };
 
-            // 2. SỬA: Gọi hàm register từ service HỢP NHẤT
             await AuthService.register(registerData);
 
             notification.success({
@@ -42,7 +42,6 @@ function RegisterPage() {
     };
 
     return (
-        // ... (Toàn bộ phần JSX của Form giữ nguyên y hệt file gốc) ...
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f0f2f5' }}>
             <Card style={{ width: 450 }}>
                 <div style={{ textAlign: 'center', marginBottom: '24px' }}>
@@ -82,18 +81,20 @@ function RegisterPage() {
                         name="password"
                         label="Mật khẩu"
                         rules={[{ required: true, message: 'Vui lòng nhập Mật khẩu!' }]}
-                        hasFeedback
+                        hasFeedback // Thêm icon feedback
                     >
                         <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" />
                     </Form.Item>
 
+                    {/* 4. Xác nhận mật khẩu */}
                     <Form.Item
                         name="confirmPassword"
                         label="Xác nhận Mật khẩu"
-                        dependencies={['password']}
+                        dependencies={['password']} // Phụ thuộc vào trường 'password'
                         hasFeedback
                         rules={[
                             { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                            // Hàm kiểm tra 2 mật khẩu có khớp không
                             ({ getFieldValue }) => ({
                                 validator(_, value) {
                                     if (!value || getFieldValue('password') === value) {

@@ -1,28 +1,20 @@
-// src/routes/PrivateRoute.js
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
-// 1. SỬA LỖI: Import 'useAuth' trực tiếp từ AuthContext
-import { useAuth } from '../contexts/AuthContext';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
+/**
+ * "Người gác cổng" cho các tuyến đường cần đăng nhập
+ */
 function PrivateRoute() {
-    // 2. SỬA LỖI: Lấy trạng thái từ context HỢP NHẤT
-    const { isAuthenticated, userType } = useAuth();
-    const location = useLocation();
+    const { isAuthenticated } = useAuth(); // Lấy trạng thái từ Context
 
-    // 1. Kiểm tra nếu chưa đăng nhập
     if (!isAuthenticated) {
-        // Chuyển hướng về trang đăng nhập CHUNG
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        // Nếu chưa đăng nhập, điều hướng về trang /login
+        return <Navigate to="/login" replace />;
     }
 
-    // 2. Kiểm tra nếu đã đăng nhập nhưng KHÔNG PHẢI ADMIN
-    if (userType !== 'admin') {
-        // Đá về trang chủ của User
-        return <Navigate to="/" replace />;
-    }
-
-    // 3. Nếu đã đăng nhập VÀ LÀ ADMIN -> Cho phép truy cập
-    return <Outlet />; // Hiển thị các trang con (AdminLayout, DashboardPage, v.v.)
+    // Nếu đã đăng nhập, hiển thị nội dung (thường là AdminLayout)
+    return <Outlet />;
 }
 
 export default PrivateRoute;

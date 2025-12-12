@@ -34,11 +34,7 @@ public class SecurityUtils {
         }
 
         return userRepository.findByEmail(email)
-<<<<<<< HEAD
                 .map(User::getId)
-=======
-                .map(user -> user.getId()) // ← SỬA: user -> user.getId()
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
                 .orElse(null);
     }
 }

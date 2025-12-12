@@ -17,18 +17,11 @@ public class AddressResponseDTO {
     private String district;
     private String province;
     private String postalCode;
-<<<<<<< HEAD
     private boolean defaultShipping;
     private boolean defaultBilling;
     private LocalDateTime createdAt;
 
     public static AddressResponseDTO fromAddress(Address address, Long defaultShippingId, Long defaultBillingId) {
-=======
-    private boolean isDefault;
-    private LocalDateTime createdAt;
-
-    public static AddressResponseDTO fromAddress(Address address) {
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         AddressResponseDTO dto = new AddressResponseDTO();
         dto.setId(address.getId());
         dto.setName(address.getName());
@@ -38,12 +31,8 @@ public class AddressResponseDTO {
         dto.setDistrict(address.getDistrict());
         dto.setProvince(address.getProvince());
         dto.setPostalCode(address.getPostalCode());
-<<<<<<< HEAD
         dto.setDefaultShipping(defaultShippingId != null && address.getId().equals(defaultShippingId));
         dto.setDefaultBilling(defaultBillingId != null && address.getId().equals(defaultBillingId));
-=======
-        dto.setDefault(address.isDefault());
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
         dto.setCreatedAt(address.getCreatedAt());
         return dto;
     }

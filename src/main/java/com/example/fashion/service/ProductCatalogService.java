@@ -22,10 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-<<<<<<< HEAD
 
-=======
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 @Service
 public class ProductCatalogService {
 
@@ -43,11 +40,7 @@ public class ProductCatalogService {
      */
     @Transactional(readOnly = true)
     public ProductDetailResponseDTO getProductDetail(Long id) {
-<<<<<<< HEAD
         Product product = productRepository.findByIdWithDetails(id)
-=======
-        Product product = productRepository.findByIdWithAllDetails(id)
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
         Set<Review> reviews = reviewRepository.findByProductId(id);
@@ -60,11 +53,7 @@ public class ProductCatalogService {
      */
     @Transactional(readOnly = true)
     public ProductDetailResponseDTO getProductDetailBySlug(String slug) {
-<<<<<<< HEAD
         Product product = productRepository.findBySlugWithDetails(slug)
-=======
-        Product product = productRepository.findBySlugWithAllDetails(slug)
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
         Set<Review> reviews = reviewRepository.findByProductId(product.getId());

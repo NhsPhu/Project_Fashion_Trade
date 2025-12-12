@@ -13,12 +13,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin/cms/pages") // giữ nguyên cho admin
-<<<<<<< HEAD
 // Thêm 'SUPER_ADMIN', 'ADMIN' và 'MARKETING' (nếu cần cho Marketing vào sửa bài)
 @PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ADMIN', 'MARKETING')")
-=======
-@PreAuthorize("hasAnyAuthority('CMS_PAGE_WRITE', 'ROLE_SUPER_ADMIN')")
->>>>>>> b332b90e2796b2d564ff0c65f80141d694ab4a22
 public class CmsController {
 
     @Autowired
