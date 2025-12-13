@@ -48,7 +48,6 @@ const ProfilePage = () => {
   const { logout } = useUserAuth();
   const navigate = useNavigate();
 
-  // BỌC load TRONG useCallback
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -73,7 +72,6 @@ const ProfilePage = () => {
     }
   }, [form]);
 
-  // ĐÃ THÊM load VÀO DEPENDENCY
   useEffect(() => {
     load();
   }, [load]);
@@ -165,7 +163,12 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/user/login'); // ĐÚNG ĐƯỜNG DẪN
+    navigate('/user/login');
+  };
+
+  const handleOrderClick = (orderId) => {
+    // SỬA: Dùng đường dẫn tuyệt đối /orders/...
+    navigate(`/orders/${orderId}`);
   };
 
   return (
@@ -213,56 +216,70 @@ const ProfilePage = () => {
                       <List
                         dataSource={addresses}
                         locale={{ emptyText: 'Chưa có địa chỉ' }}
-                        renderItem={(addr) => (
-                          <List.Item
-                            actions={[
-                              <Tooltip title="Chỉnh sửa" key="edit">
-                                <Button size="small" icon={<EditOutlined />} onClick={() => openEditAddress(addr)} />
-                              </Tooltip>,
-                              <Tooltip title="Xóa" key="delete">
-                                <Button
-                                  danger
-                                  size="small"
-                                  icon={<DeleteOutlined />}
-                                  onClick={() => handleDeleteAddress(addr.id)}
-                                />
-                              </Tooltip>,
-                            ]}
-                          >
-                            <List.Item.Meta
-                              title={
-                                <Space>
-                                  <span>{addr.name} - {addr.phone}</span>
-                                  {addr.defaultShipping && <Tag icon={<HomeOutlined />} color="green">Ship mặc định</Tag>}
-                                  {addr.defaultBilling && <Tag icon={<ShoppingOutlined />} color="blue">Thanh toán</Tag>}
-                                </Space>
-                              }
-                              description={
-                                <>
-                                  <div>{addr.addressLine}</div>
-                                  <div>{addr.district}, {addr.city}, {addr.province}</div>
-                                  {addr.postalCode && <div>Mã bưu chính: {addr.postalCode}</div>}
-                                </>
-                              }
-                            />
-                            <Space direction="vertical">
+                        renderItem={(addr) => {
+                          // --- PHẦN SỬA LOGIC HIỂN THỊ NÚT ĐỂ TRÁNH VỠ GIAO DIỆN ---
+                          const actions = [];
+
+                          // Chỉ hiện nút set mặc định nếu chưa phải mặc định
+                          if (!addr.defaultShipping) {
+                            actions.push(
                               <Button
+                                key="ship"
+                                type="link"
                                 size="small"
-                                type={addr.defaultShipping ? 'primary' : 'default'}
                                 onClick={() => handleSetDefault(addr, 'shipping')}
                               >
                                 Đặt ship mặc định
                               </Button>
+                            );
+                          }
+
+                          if (!addr.defaultBilling) {
+                            actions.push(
                               <Button
+                                key="bill"
+                                type="link"
                                 size="small"
-                                type={addr.defaultBilling ? 'primary' : 'default'}
                                 onClick={() => handleSetDefault(addr, 'billing')}
                               >
                                 Đặt thanh toán
                               </Button>
-                            </Space>
-                          </List.Item>
-                        )}
+                            );
+                          }
+
+                          // Nút Sửa và Xóa
+                          actions.push(
+                            <Tooltip title="Chỉnh sửa" key="edit">
+                              <Button type="text" icon={<EditOutlined />} onClick={() => openEditAddress(addr)} />
+                            </Tooltip>
+                          );
+                          actions.push(
+                            <Tooltip title="Xóa" key="delete">
+                              <Button danger type="text" icon={<DeleteOutlined />} onClick={() => handleDeleteAddress(addr.id)} />
+                            </Tooltip>
+                          );
+
+                          return (
+                            <List.Item actions={actions}>
+                              <List.Item.Meta
+                                title={
+                                  <Space>
+                                    <span style={{ fontWeight: 600 }}>{addr.name} - {addr.phone}</span>
+                                    {addr.defaultShipping && <Tag icon={<HomeOutlined />} color="green">Ship mặc định</Tag>}
+                                    {addr.defaultBilling && <Tag icon={<ShoppingOutlined />} color="blue">Thanh toán</Tag>}
+                                  </Space>
+                                }
+                                description={
+                                  <div style={{ marginTop: 4 }}>
+                                    <div>{addr.addressLine}</div>
+                                    <div>{addr.district}, {addr.city}, {addr.province}</div>
+                                    {addr.postalCode && <div>Mã bưu chính: {addr.postalCode}</div>}
+                                  </div>
+                                }
+                              />
+                            </List.Item>
+                          );
+                        }}
                       />
                     </Card>
                   </Col>
@@ -280,7 +297,10 @@ const ProfilePage = () => {
                         dataSource={activity.orders || []}
                         locale={{ emptyText: 'Chưa có đơn hàng' }}
                         renderItem={(order) => (
-                          <List.Item>
+                          <List.Item
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleOrderClick(order.id)}
+                          >
                             <List.Item.Meta
                               title={
                                 <Space>

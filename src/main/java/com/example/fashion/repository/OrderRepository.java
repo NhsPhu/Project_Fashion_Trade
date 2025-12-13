@@ -28,4 +28,7 @@ public interface OrderRepository
 
     // 2. Đếm số lượng đơn hàng theo khoảng thời gian tạo
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    // 3. Tìm tất cả đơn hàng của một user, sắp xếp theo ngày tạo giảm dần
+    List<Order> findByUserIdOrderByCreatedAtDesc(Long userId);
 }
