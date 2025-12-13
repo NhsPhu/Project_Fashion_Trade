@@ -85,8 +85,9 @@ public class SecurityConfig {
                         // 3. Public GET
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**", "/api/v1/public/products/**", "/api/v1/categories/**", "/api/v1/brands/**").permitAll()
 
-                        // 4. User actions (Giỏ hàng)
+                        // 4. User actions (Giỏ hàng, Đơn hàng)
                         .requestMatchers("/api/v1/user/cart/**", "/api/v1/cart/**").permitAll()
+                        .requestMatchers("/api/v1/orders/**").authenticated() // CHO PHÉP USER XEM ĐƠN HÀNG
                         .requestMatchers("/api/v1/user/wishlist/**", "/api/v1/user/reviews/**").authenticated()
 
                         // --- [SỬA LỖI 2] THÊM ROLE_SUPER_ADMIN VÀO TẤT CẢ CÁC MỤC ---

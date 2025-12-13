@@ -14,6 +14,7 @@ import CategoryListPage from '../pages/users/CategoryListPage';
 import BrandListPage from '../pages/users/BrandListPage';
 import UserLoginPage from '../pages/users/UserLoginPage';
 import UserRegisterPage from '../pages/users/UserRegisterPage';
+import OrderDetailPage from '../pages/users/OrderDetailPage';
 
 const UserRoutes = () => {
     return (
@@ -34,6 +35,7 @@ const UserRoutes = () => {
                 <Route path="order-success" element={<OrderSuccessPage />} />
                 <Route path="wishlist" element={<WishlistPage />} />
                 <Route path="profile" element={<ProfilePage />} />
+                <Route path="orders/:orderId" element={<OrderDetailPage />} />
             </Route>
 
             {/* Redirect tất cả không tìm thấy */}

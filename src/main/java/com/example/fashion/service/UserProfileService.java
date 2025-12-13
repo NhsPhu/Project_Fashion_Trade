@@ -195,11 +195,8 @@ public class UserProfileService {
     public Map<String, Object> getActivityHistory(Long userId) {
         Map<String, Object> history = new LinkedHashMap<>();
 
-        // ĐƠN HÀNG: DÙNG Specification
-        Specification<Order> orderSpec = (root, query, cb) ->
-                cb.equal(root.get("user").get("id"), userId);
-
-        List<Order> orders = orderRepository.findAll(orderSpec);
+        // SỬA: Dùng phương thức mới trong OrderRepository
+        List<Order> orders = orderRepository.findByUserIdOrderByCreatedAtDesc(userId);
         history.put("orders", orders.stream()
                 .map(OrderResponseDTO::fromOrder)
                 .collect(Collectors.toList()));

@@ -41,9 +41,6 @@ public class AdminOrderController {
         return ResponseEntity.ok(orderPage);
     }
 
-    /**
-     * API Lấy chi tiết một đơn hàng
-     */
     @GetMapping("/{id}")
     public ResponseEntity<?> getOrderById(@PathVariable Long id) {
         try {
