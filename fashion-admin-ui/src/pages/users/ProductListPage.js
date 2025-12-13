@@ -1,13 +1,13 @@
 // src/pages/user/ProductListPage.js
 import React, { useEffect, useState, useCallback } from 'react';
-import { Card, Row, Col, Input, Select, Pagination, Space, Typography, Spin, Button, message } from 'antd'; // Thêm message
+import { Card, Row, Col, Input, Select, Pagination, Space, Typography, Spin, Button, message, Tag, Rate } from 'antd';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SearchOutlined } from '@ant-design/icons';
 import ProductCatalogService from '../../services/user/ProductCatalogService';
 import './ProductListPage.css';
 
 const { Option } = Select;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const ProductListPage = () => {
   const navigate = useNavigate();
@@ -29,9 +29,14 @@ const ProductListPage = () => {
     maxPrice: searchParams.get('maxPrice') || null,
   });
 
-  // 1. SỬA LỖI ẢNH: Dùng link này thay cho via.placeholder
   const PLACEHOLDER_IMG = 'https://placehold.co/250x250?text=No+Image';
   const IMAGE_BASE_URL = '/product_image/img/';
+
+  const getImageUrl = (imageName) => {
+    if (!imageName) return PLACEHOLDER_IMG;
+    if (imageName.startsWith('http')) return imageName;
+    return `${IMAGE_BASE_URL}${imageName}`;
+  };
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -46,7 +51,6 @@ const ProductListPage = () => {
       setTotal(response.totalElements || 0);
     } catch (error) {
       console.error('Error loading products:', error);
-      // message.error('Không thể tải danh sách sản phẩm'); // Bật lên nếu muốn hiện thông báo lỗi
       setProducts([]);
     } finally {
       setLoading(false);
@@ -85,19 +89,11 @@ const ProductListPage = () => {
     setSearchParams(params);
   };
 
-  // 2. HÀM XỬ LÝ ẢNH AN TOÀN
-  const getImageUrl = (imageName) => {
-    if (!imageName) return PLACEHOLDER_IMG;
-    if (imageName.startsWith('http')) return imageName;
-    return `${IMAGE_BASE_URL}${imageName}`;
-  };
-
   return (
       <div className="product-list-page">
         <div className="product-list-header">
           <Title level={2}>Danh sách sản phẩm</Title>
           <Space>
-            {/* 3. SỬA LỖI GIAO DIỆN: Dùng Space.Compact thay vì Input.Search */}
             <Space.Compact style={{ width: 300 }}>
               <Input
                   placeholder="Tìm kiếm sản phẩm..."
@@ -111,7 +107,7 @@ const ProductListPage = () => {
             </Space.Compact>
 
             <Select
-                defaultValue={filters.sort}
+                value={filters.sort}
                 style={{ width: 200 }}
                 onChange={handleSortChange}
                 size="large"
@@ -132,39 +128,84 @@ const ProductListPage = () => {
               </div>
           ) : (
               <Row gutter={[16, 16]}>
-                {products.map((product) => (
-                    <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
-                      <Card
-                          hoverable
-                          cover={
-                            <img
-                                alt={product.name}
-                                src={getImageUrl(product.defaultImage)}
-                                style={{ height: 250, objectFit: 'cover' }}
-                                // 4. SỬA LỖI ẢNH CHẾT: Tự động chuyển sang ảnh mẫu nếu lỗi
-                                onError={(e) => {
-                                  if (e.target.src !== PLACEHOLDER_IMG) {
-                                    e.target.onerror = null;
-                                    e.target.src = PLACEHOLDER_IMG;
-                                  }
-                                }}
-                            />
-                          }
-                          onClick={() => navigate(`/products/${product.id}`)}
-                      >
-                        <Card.Meta
-                            title={<div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{product.name}</div>}
-                            description={
-                              <Space direction="vertical" size="small">
-                                <span style={{ fontWeight: 'bold' }}>
-                                  {product.minPrice?.toLocaleString('vi-VN') || 'LH'} ₫
-                                </span>
-                              </Space>
+                {products.map((product) => {
+                  const hasSale = product.minSalePrice && product.minSalePrice < product.minPrice;
+                  const discountPercent = hasSale
+                      ? Math.round(((product.minPrice - product.minSalePrice) / product.minPrice) * 100)
+                      : 0;
+
+                  return (
+                      <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
+                        <Card
+                            hoverable
+                            cover={
+                              <div style={{ position: 'relative' }}>
+                                <img
+                                    alt={product.name}
+                                    src={getImageUrl(product.defaultImage)}
+                                    style={{ height: 250, objectFit: 'cover', width: '100%' }}
+                                    onError={(e) => {
+                                      if (e.target.src !== PLACEHOLDER_IMG) {
+                                        e.target.onerror = null;
+                                        e.target.src = PLACEHOLDER_IMG;
+                                      }
+                                    }}
+                                />
+                                {hasSale && (
+                                    <Tag color="red" style={{ position: 'absolute', top: 8, left: 8, fontWeight: 'bold' }}>
+                                      -{discountPercent}%
+                                    </Tag>
+                                )}
+                              </div>
                             }
-                        />
-                      </Card>
-                    </Col>
-                ))}
+                            onClick={() => navigate(`/products/${product.id}`)}
+                        >
+                          <Card.Meta
+                              title={
+                                <div style={{
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  fontWeight: 'bold',
+                                  fontSize: 15
+                                }}>
+                                  {product.name}
+                                </div>
+                              }
+                              description={
+                                <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                                  <div>
+                                    {hasSale ? (
+                                        <Space align="baseline">
+                                          <Text strong style={{ fontSize: 19, color: '#ff4d4f' }}>
+                                            {product.minSalePrice.toLocaleString('vi-VN')} ₫
+                                          </Text>
+                                          <Text delete type="secondary">
+                                            {product.minPrice.toLocaleString('vi-VN')} ₫
+                                          </Text>
+                                        </Space>
+                                    ) : (
+                                        <Text strong style={{ fontSize: 18, color: '#d4380d' }}>
+                                          {product.minPrice?.toLocaleString('vi-VN') || 'Liên hệ'} ₫
+                                        </Text>
+                                    )}
+                                  </div>
+
+                                  {product.averageRating > 0 && (
+                                      <div style={{ fontSize: 13 }}>
+                                        <Rate disabled allowHalf value={product.averageRating} style={{ fontSize: 13 }} />
+                                        <Text type="secondary" style={{ marginLeft: 6 }}>
+                                          ({product.reviewCount || 0})
+                                        </Text>
+                                      </div>
+                                  )}
+                                </Space>
+                              }
+                          />
+                        </Card>
+                      </Col>
+                  );
+                })}
               </Row>
           )}
 
