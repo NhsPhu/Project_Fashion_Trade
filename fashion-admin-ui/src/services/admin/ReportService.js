@@ -1,11 +1,11 @@
 // src/services/ReportService.js
-import api from '../ApiService';
+import { apiClient } from '../AuthService';
 
 const API_PREFIX = '/admin/reports';
 
 const ReportService = {
     getRevenue: async (period, start, end) => {
-        const response = await api.get(`${API_PREFIX}/revenue`, {
+        const response = await apiClient.get(`${API_PREFIX}/revenue`, {
             params: {
                 period,
                 start: start?.format('YYYY-MM-DDTHH:mm:ss'),
@@ -16,7 +16,7 @@ const ReportService = {
     },
 
     getOrders: async (start, end) => {
-        const response = await api.get(`${API_PREFIX}/orders`, {
+        const response = await apiClient.get(`${API_PREFIX}/orders`, {
             params: {
                 start: start?.format('YYYY-MM-DDTHH:mm:ss'),
                 end: end?.format('YYYY-MM-DDTHH:mm:ss')
@@ -26,17 +26,17 @@ const ReportService = {
     },
 
     getTopProducts: async (limit = 10) => {
-        const response = await api.get(`${API_PREFIX}/top-products`, { params: { limit } });
+        const response = await apiClient.get(`${API_PREFIX}/top-products`, { params: { limit } });
         return response.data;
     },
 
     getLowStock: async () => {
-        const response = await api.get(`${API_PREFIX}/low-stock`);
+        const response = await apiClient.get(`${API_PREFIX}/low-stock`);
         return response.data;
     },
 
     getCustomers: async (start, end) => {
-        const response = await api.get(`${API_PREFIX}/customers`, {
+        const response = await apiClient.get(`${API_PREFIX}/customers`, {
             params: {
                 start: start?.format('YYYY-MM-DDTHH:mm:ss'),
                 end: end?.format('YYYY-MM-DDTHH:mm:ss')
@@ -53,7 +53,7 @@ const ReportService = {
         }
 
         // Quan trọng: responseType 'blob' để nhận file
-        const response = await api.get(`${API_PREFIX}/export/excel`, {
+        const response = await apiClient.get(`${API_PREFIX}/export/excel`, {
             params,
             responseType: 'blob'
         });

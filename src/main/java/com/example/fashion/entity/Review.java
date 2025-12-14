@@ -1,10 +1,8 @@
-// src/main/java/com/example/fashion/entity/Review.java
 package com.example.fashion.entity;
 
-import com.example.fashion.enums.ReviewStatus; // ĐÚNG CHỖ
+import com.example.fashion.enums.ReviewStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -21,28 +19,33 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(name = "rating", nullable = false)
-    private Integer rating;
+    @ManyToOne
+    @JoinColumn(name = "product_id")
+    private Product product;
 
-    @Column(name = "title", length = 255)
+    private Integer rating; // 1-5
     private String title;
 
-    @Column(name = "body", columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String body;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 20, nullable = false)
-    private ReviewStatus status = ReviewStatus.PENDING;
+    // --- THÊM DÒNG NÀY ĐỂ SỬA LỖI ---
+    @Column(columnDefinition = "TEXT")
+    private String reply; // Lưu câu trả lời của Admin
+    // -------------------------------
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Enumerated(EnumType.STRING)
+    private ReviewStatus status;
+
     private LocalDateTime createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+        if (this.status == null) this.status = ReviewStatus.PENDING;
+    }
 }

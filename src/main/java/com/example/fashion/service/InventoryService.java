@@ -115,6 +115,13 @@ public class InventoryService {
         return temp;
     }
 
+    @Transactional(readOnly = true)
+    public Integer getStockQuantity(Long variantId, Long warehouseId) {
+        // Sử dụng hàm repository đã có sẵn: findByVariantIdAndWarehouseId
+        return inventoryRepository.findByVariantIdAndWarehouseId(variantId, warehouseId)
+                .map(Inventory::getQuantity) // Nếu tìm thấy -> lấy số lượng
+                .orElse(0);                 // Nếu không thấy -> trả về 0
+    }
     // ===================================================================
     // 5. CẬP NHẬT TỒN KHO – ĐÃ FIX LỖI product_id → HẾT 403
     // ===================================================================

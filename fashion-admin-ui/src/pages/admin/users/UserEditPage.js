@@ -1,3 +1,4 @@
+// src/pages/admin/users/UserEditPage.js
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -15,9 +16,8 @@ import {
 
 const { Title } = Typography;
 
-// Danh sách tất cả vai trò (lấy từ Enum Role.java)
-const ALL_ROLES = [
-    "CUSTOMER",
+// Danh sách quyền cho Admin chọn (Đã ẩn CUSTOMER)
+const SELECTABLE_ROLES = [
     "PRODUCT_MANAGER",
     "ORDER_MANAGER",
     "SUPPORT",
@@ -37,11 +37,14 @@ function UserEditPage() {
         const fetchUserData = async () => {
             try {
                 const userData = await UserService.getUserById(id);
-                // Điền dữ liệu vào form
+
+                // Lọc bỏ CUSTOMER để không bị warning trên giao diện checkbox
+                const displayRoles = userData.roles.filter(role => role !== 'CUSTOMER');
+
                 form.setFieldsValue({
                     email: userData.email,
                     fullName: userData.fullName,
-                    roles: userData.roles // Checkbox.Group sẽ tự động chọn
+                    roles: displayRoles
                 });
             } catch (err) {
                 notification.error({ message: 'Lỗi tải dữ liệu', description: err.message });
@@ -53,11 +56,13 @@ function UserEditPage() {
         fetchUserData();
     }, [id, form]);
 
-    // Hàm xử lý Submit
     const onFinish = async (values) => {
         setIsUpdating(true);
         try {
-            await UserService.updateUserRoles(id, values.roles);
+            // Tự động thêm quyền CUSTOMER vào danh sách gửi đi
+            const finalRoles = [...new Set([...values.roles, "CUSTOMER"])];
+
+            await UserService.updateUserRoles(id, finalRoles);
             notification.success({ message: 'Cập nhật vai trò thành công!' });
             navigate('/admin/users');
         } catch (err) {
@@ -82,13 +87,12 @@ function UserEditPage() {
                     <Input readOnly disabled />
                 </Form.Item>
 
-                {/* Phần Cập nhật Vai trò */}
                 <Form.Item
                     name="roles"
-                    label="Vai trò (Roles)"
-                    rules={[{ required: true, message: 'Phải chọn ít nhất 1 vai trò' }]}
+                    label="Vai trò Quản trị (Roles)"
+                    help="Vai trò 'CUSTOMER' sẽ luôn được giữ mặc định."
                 >
-                    <Checkbox.Group options={ALL_ROLES} />
+                    <Checkbox.Group options={SELECTABLE_ROLES} />
                 </Form.Item>
 
                 <Form.Item>
@@ -101,4 +105,5 @@ function UserEditPage() {
     );
 }
 
+// QUAN TRỌNG: Dòng này giúp AdminRoutes import được file này
 export default UserEditPage;

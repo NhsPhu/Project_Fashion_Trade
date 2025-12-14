@@ -1,5 +1,5 @@
 // src/services/user/CategoryService.js
-import { userApiClient } from './httpClient';
+import { userApiClient } from '../httpClient';
 
 const CategoryService = {
     getAll: async () => {

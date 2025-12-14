@@ -94,7 +94,6 @@ const UserHeader = () => {
           <NavLink to="/products">Sản phẩm</NavLink>
           <NavLink to="/wishlist">Yêu thích</NavLink>
           <NavLink to="/categories">Chuyên mục</NavLink>
-          <NavLink to="/brands">Thương hiệu</NavLink>
         </nav>
 
         <Space size={24} className="user-action-group">

@@ -15,7 +15,9 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    @PostMapping("/checkout")
+    // --- SỬA Ở ĐÂY: KHÔNG CÓ "/checkout" ---
+    // Đường dẫn thực tế sẽ là: POST /api/v1/orders
+    @PostMapping
     public ResponseEntity<?> createOrder(@RequestBody CheckoutRequestDTO request) {
         try {
             Order newOrder = orderService.createOrder(request);
@@ -25,9 +27,9 @@ public class OrderController {
         }
     }
 
+    // Hàm này giữ nguyên, nhưng nó là lý do gây hiểu lầm nếu URL sai
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderDTO> getOrderById(@PathVariable Long orderId) {
-        // SỬA: Gọi phương thức mới getOrderDetailsForUser
         OrderDTO order = orderService.getOrderDetailsForUser(orderId);
         return ResponseEntity.ok(order);
     }

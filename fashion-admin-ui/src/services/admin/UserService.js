@@ -1,9 +1,8 @@
 // src/services/admin/UserService.js
-import api from '../ApiService'; // 1. SỬA LỖI: Import instance TRUNG TÂM (chú ý ../)
 
-/**
- * Dịch vụ xử lý API liên quan đến Quản lý Người dùng
- */
+// --- SỬA 1: Import apiClient từ AuthService (Nơi đã cấu hình Token) ---
+import { apiClient } from '../AuthService';
+
 const UserService = {
 
     /**
@@ -11,45 +10,42 @@ const UserService = {
      */
     getAllUsers: async () => {
         try {
-            // 2. SỬA LỖI: Dùng 'api' và xóa '/api/v1'
-            const response = await api.get('/admin/users');
+            // --- SỬA 2: Dùng apiClient ---
+            // apiClient đã có baseURL là /api/v1 nên chỉ cần gọi /admin/users
+            const response = await apiClient.get('/admin/users');
             return response.data;
         } catch (error) {
-            console.error('Lỗi khi lấy danh sách người dùng:', error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Không thể tải danh sách người dùng');
+            console.error('Lỗi khi lấy danh sách người dùng:', error);
+            throw error;
         }
     },
 
     /**
-     * MỚI: Lấy thông tin chi tiết một người dùng
-     * @param {number} userId
+     * Lấy thông tin chi tiết một người dùng
      */
     getUserById: async (userId) => {
         try {
-            // 2. SỬA LỖI: Dùng 'api'
-            const response = await api.get(`/admin/users/${userId}`);
+            const response = await apiClient.get(`/admin/users/${userId}`);
             return response.data;
-
         } catch (error) {
-            console.error(`Lỗi khi lấy chi tiết người dùng ${userId}:`, error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Không thể tải chi tiết người dùng');
+            console.error(`Lỗi lấy chi tiết user ${userId}:`, error);
+            throw error;
         }
     },
-
 
     /**
      * Cập nhật trạng thái (Khóa/Mở)
      */
     updateUserStatus: async (userId, status) => {
         try {
-            // 2. SỬA LỖI: Dùng 'api'
-            const response = await api.put(`/admin/users/${userId}/status`, {
+            // Body gửi lên: { status: "active" } hoặc { status: "locked" }
+            const response = await apiClient.put(`/admin/users/${userId}/status`, {
                 status: status
             });
             return response.data;
         } catch (error) {
-            console.error(`Lỗi khi cập nhật trạng thái user ${userId}:`, error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Cập nhật thất bại');
+            console.error(`Lỗi cập nhật trạng thái user ${userId}:`, error);
+            throw error;
         }
     },
 
@@ -58,14 +54,14 @@ const UserService = {
      */
     updateUserRoles: async (userId, roles) => {
         try {
-            // 2. SỬA LỖI: Dùng 'api'
-            const response = await api.put(`/admin/users/${userId}/roles`, {
+            // Body gửi lên: { roles: ["ADMIN", "CUSTOMER"] }
+            const response = await apiClient.put(`/admin/users/${userId}/roles`, {
                 roles: roles
             });
             return response.data;
         } catch (error) {
-            console.error(`Lỗi khi cập nhật vai trò user ${userId}:`, error.response?.data || error.message);
-            throw new Error(error.response?.data?.message || 'Cập nhật thất bại');
+            console.error(`Lỗi cập nhật vai trò user ${userId}:`, error);
+            throw error;
         }
     }
 };

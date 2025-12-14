@@ -62,10 +62,9 @@ const AdminLayout = () => {
     // 1. SỬA LỖI Ant Design: 'menu' phải là một object chứa 'items'
     const userMenu = {
         items: [
-            { key: '1', label: 'Hồ sơ (Chưa có)', icon: <UserOutlined /> },
-            { key: '2', label: <Link to="/">Xem trang chủ</Link>, icon: <HomeOutlined /> },
+            { key: '1', label: <Link to="/">Xem trang chủ</Link>, icon: <HomeOutlined /> },
             { type: 'divider' },
-            { key: '3', label: 'Đăng xuất', icon: <LogoutOutlined />, onClick: handleLogout },
+            { key: '2', label: 'Đăng xuất', icon: <LogoutOutlined />, onClick: handleLogout },
         ]
     };
 
@@ -73,7 +72,7 @@ const AdminLayout = () => {
         <Layout style={{ minHeight: '100vh' }}>
             <Sider collapsible width={200}>
                 <div style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)', color: 'white', textAlign: 'center', lineHeight: '32px', borderRadius: 4 }}>
-                    ADMIN
+                    THE FASHION HOUSE
                 </div>
                 <Menu
                     theme="dark"

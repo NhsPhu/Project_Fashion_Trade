@@ -1,45 +1,48 @@
 // src/services/user/WishlistService.js
-import { userApiClient } from './httpClient';
+
+// --- SỬA QUAN TRỌNG: Import apiClient từ AuthService để có Token ---
+// (Lưu ý đường dẫn: từ folder 'user' ra folder cha 'services' là '../')
+import { apiClient } from '../AuthService';
 
 const WishlistService = {
   // ==================== USER ====================
   getWishlist: async () => {
-    const res = await userApiClient.get('/user/wishlist');
+    // apiClient sẽ tự động gắn Header: Authorization: Bearer ...
+    const res = await apiClient.get('/user/wishlist');
     return res.data;
   },
 
-  // ĐÃ SỬA: Bắt lỗi 409 khi sản phẩm đã có trong wishlist
   addToWishlist: async (productId) => {
     try {
-      await userApiClient.post(`/user/wishlist/${productId}`);
+      await apiClient.post(`/user/wishlist/${productId}`);
       return true; // thành công
     } catch (error) {
       // Backend trả 409 → đã có trong wishlist
       if (error.response?.status === 409) {
         throw new Error('ALREADY_IN_WISHLIST');
       }
-      // Các lỗi khác (500, 401, v.v.)
+      // Các lỗi khác
       throw new Error(error.response?.data?.message || 'Không thể thêm vào danh sách yêu thích');
     }
   },
 
   removeFromWishlist: async (productId) => {
-    await userApiClient.delete(`/user/wishlist/${productId}`);
+    await apiClient.delete(`/user/wishlist/${productId}`);
   },
 
-  // ==================== ADMIN ====================
+  // ==================== ADMIN (Nếu dùng chung service) ====================
   getAllWishlists: async (page = 0, size = 10) => {
-    const res = await userApiClient.get('/admin/wishlists', { params: { page, size } });
+    const res = await apiClient.get('/admin/wishlists', { params: { page, size } });
     return res.data;
   },
 
   getWishlistByUserId: async (userId) => {
-    const res = await userApiClient.get(`/admin/wishlists/user/${userId}`);
+    const res = await apiClient.get(`/admin/wishlists/user/${userId}`);
     return res.data;
   },
 
   removeItem: async (itemId) => {
-    await userApiClient.delete(`/admin/wishlists/items/${itemId}`);
+    await apiClient.delete(`/admin/wishlists/items/${itemId}`);
   },
 };
 

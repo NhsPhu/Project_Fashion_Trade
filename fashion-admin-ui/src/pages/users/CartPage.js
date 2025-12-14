@@ -37,10 +37,12 @@ const CartPage = () => {
     };
 
     const handleCheckout = () => {
+        console.log("Nút thanh toán đã được bấm!"); // <--- Thêm dòng này để kiểm tra
         if (!cart?.items || cart.items.length === 0) {
             message.warning('Giỏ hàng trống!');
             return;
         }
+        console.log("Đang chuyển hướng đến /checkout..."); // <--- Thêm dòng này
         navigate('/checkout');
     };
 

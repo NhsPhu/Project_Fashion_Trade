@@ -6,17 +6,20 @@ import {
   Button, Tabs, message, Alert, Spin, Tag, Divider, Rate, Input
 } from 'antd';
 import { HeartFilled, HeartOutlined } from '@ant-design/icons';
+
+// SERVICE
 import ProductCatalogService from '../../services/user/ProductCatalogService';
 import WishlistService from '../../services/user/WishlistService';
+
+// CONTEXT
 import { useUserCart } from '../../contexts/UserCartContext';
 import { useUserAuth } from '../../contexts/UserAuthContext';
-import InventoryService from '../../services/admin/InventoryService'; // THÊM: Để lấy tồn kho từ inventory
+
+// LƯU Ý: Đã XÓA import InventoryService (của Admin) để tránh lỗi 403
 
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
-
-const WAREHOUSE_ID = 1; // Kho Hà Nội (theo DB)
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -36,10 +39,9 @@ const ProductDetailPage = () => {
   const [newReview, setNewReview] = useState({ rating: 0, content: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  // THÊM: Lưu tồn kho thật từ inventory
+  // State lưu tồn kho
   const [variantStock, setVariantStock] = useState({}); // { variantId: quantity }
 
-  // Xử lý ảnh
   const IMAGE_BASE_URL = '/product_image/img/';
   const getImageUrl = (imageName) => {
     if (!imageName) return 'https://placehold.co/400x400?text=No+Image';
@@ -50,7 +52,7 @@ const ProductDetailPage = () => {
   const { addItem } = useUserCart();
   const { isAuthenticated } = useUserAuth();
 
-  // Load sản phẩm
+  // 1. Load sản phẩm
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -71,7 +73,7 @@ const ProductDetailPage = () => {
     load();
   }, [id]);
 
-  // THÊM: Load tồn kho thật từ inventory cho tất cả variant
+  // 2. Load tồn kho (SỬA: Dùng API Public)
   useEffect(() => {
     if (!product?.variants || product.variants.length === 0) return;
 
@@ -79,10 +81,11 @@ const ProductDetailPage = () => {
       const stockMap = {};
       for (const variant of product.variants) {
         try {
-          const res = await InventoryService.getStock(variant.id, WAREHOUSE_ID);
-          stockMap[variant.id] = res.quantity || 0;
+          // GỌI HÀM MỚI TỪ ProductCatalogService (Không bị lỗi 403 nữa)
+          const quantity = await ProductCatalogService.getPublicStock(variant.id);
+          stockMap[variant.id] = quantity || 0;
         } catch (err) {
-          console.error('Lỗi lấy tồn kho:', err);
+          console.error(`Lỗi lấy tồn kho variant ${variant.id}:`, err);
           stockMap[variant.id] = 0;
         }
       }
@@ -91,7 +94,7 @@ const ProductDetailPage = () => {
     loadInventoryStock();
   }, [product]);
 
-  // Kiểm tra wishlist
+  // 3. Kiểm tra wishlist
   useEffect(() => {
     const checkWishlistStatus = async () => {
       if (!isAuthenticated || !product?.id) {
@@ -105,6 +108,7 @@ const ProductDetailPage = () => {
           setIsInWishlist(exists);
         }
       } catch (err) {
+        // Bỏ qua lỗi 401/403 nếu chưa login
         if (err.response?.status !== 401 && err.response?.status !== 403) {
           console.error('Lỗi kiểm tra wishlist:', err);
         }
@@ -117,17 +121,25 @@ const ProductDetailPage = () => {
     return product?.variants?.find(v => v.id === selectedVariantId) || null;
   }, [product, selectedVariantId]);
 
-  // Tính giá sale và % giảm - ĐÃ SỬA ĐÚNG
+  // Tính giá
   const price = selectedVariant?.price || 0;
   const salePrice = selectedVariant?.salePrice;
   const hasDiscount = salePrice && salePrice < price;
   const discountPercent = hasDiscount ? Math.round(((price - salePrice) / price) * 100) : 0;
 
+  // Xử lý thêm vào giỏ
   const handleAddToCart = async () => {
     if (!selectedVariantId) {
       message.warning('Vui lòng chọn biến thể');
       return;
     }
+    // Kiểm tra tồn kho trước khi thêm
+    const currentStock = variantStock[selectedVariantId] || 0;
+    if (quantity > currentStock) {
+      message.error(`Chỉ còn ${currentStock} sản phẩm trong kho!`);
+      return;
+    }
+
     setAddingToCart(true);
     try {
       await addItem({
@@ -142,6 +154,7 @@ const ProductDetailPage = () => {
     }
   };
 
+  // Xử lý yêu thích
   const handleFavorite = async () => {
     if (!isAuthenticated) {
       message.info('Vui lòng đăng nhập để lưu sản phẩm yêu thích');
@@ -166,6 +179,7 @@ const ProductDetailPage = () => {
     }
   };
 
+  // Xử lý đánh giá
   const handleSubmitReview = async () => {
     if (!newReview.rating || !newReview.content.trim()) {
       message.warning('Vui lòng nhập đủ thông tin');
@@ -178,6 +192,8 @@ const ProductDetailPage = () => {
         body: newReview.content.trim(),
       });
       message.success('Đánh giá thành công!');
+
+      // Cập nhật lại UI
       setProduct(prev => ({
         ...prev,
         reviews: [savedReview, ...(prev.reviews || [])],
@@ -198,7 +214,7 @@ const ProductDetailPage = () => {
   return (
       <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
         <Row gutter={24}>
-          {/* Ảnh sản phẩm */}
+          {/* CỘT TRÁI: ẢNH */}
           <Col xs={24} md={12}>
             <Image
                 width="100%"
@@ -221,7 +237,8 @@ const ProductDetailPage = () => {
               ))}
             </Space>
           </Col>
-          {/* Thông tin */}
+
+          {/* CỘT PHẢI: THÔNG TIN */}
           <Col xs={24} md={12}>
             <Title level={2} style={{ marginBottom: 12 }}>{product.name}</Title>
             <Space size={8} style={{ marginBottom: 16 }}>
@@ -229,7 +246,8 @@ const ProductDetailPage = () => {
               {product.brandName && <Tag color="green">{product.brandName}</Tag>}
             </Space>
             <Divider style={{ margin: '16px 0' }} />
-            {/* SKU & Tồn kho - SỬA: DÙNG TỒN KHO THẬT TỪ INVENTORY */}
+
+            {/* SKU & Tồn kho */}
             <Space direction="vertical" size={10} style={{ width: '100%' }}>
               <div>
                 <Text strong>SKU: </Text>
@@ -237,12 +255,14 @@ const ProductDetailPage = () => {
               </div>
               <div>
                 <Text strong>Tồn kho: </Text>
+                {/* Hiển thị tồn kho từ state variantStock */}
                 <Tag color={variantStock[selectedVariantId] > 0 ? 'green' : 'red'}>
                   {variantStock[selectedVariantId] > 0 ? `${variantStock[selectedVariantId]} sản phẩm` : 'Hết hàng'}
                 </Tag>
               </div>
             </Space>
-            {/* GIÁ SALE SIÊU ĐẸP */}
+
+            {/* Giá */}
             <div style={{ margin: '30px 0 20px 0' }}>
               <Text strong style={{ fontSize: 18 }}>Giá:</Text>
               <div style={{ marginTop: 12 }}>
@@ -265,7 +285,8 @@ const ProductDetailPage = () => {
                 )}
               </div>
             </div>
-            {/* Biến thể */}
+
+            {/* Chọn biến thể */}
             <div style={{ marginBottom: 20 }}>
               <Text strong>Biến thể:</Text>
               <Select
@@ -280,17 +301,19 @@ const ProductDetailPage = () => {
                 ))}
               </Select>
             </div>
-            {/* Số lượng */}
+
+            {/* Chọn số lượng */}
             <div style={{ marginBottom: 30 }}>
               <Text strong>Số lượng:</Text>
               <InputNumber
                   min={1}
-                  max={variantStock[selectedVariantId] ?? 99} // SỬA: Dùng tồn kho thật từ inventory
+                  max={variantStock[selectedVariantId] ?? 99}
                   value={quantity}
                   onChange={setQuantity}
                   style={{ marginLeft: 12, width: 120 }}
               />
             </div>
+
             {/* Nút hành động */}
             <Space size={16}>
               <Button
@@ -298,11 +321,12 @@ const ProductDetailPage = () => {
                   size="large"
                   onClick={handleAddToCart}
                   loading={addingToCart}
+                  disabled={variantStock[selectedVariantId] <= 0} // Disable nếu hết hàng
                   style={{ minWidth: 200, height: 50, fontSize: 16 }}
               >
-                Thêm vào giỏ hàng
+                {variantStock[selectedVariantId] > 0 ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
               </Button>
-              {/* CHỈ HIỆN NÚT YÊU THÍCH KHI ĐÃ ĐĂNG NHẬP */}
+
               {isAuthenticated && (
                   <Button
                       size="large"
@@ -320,7 +344,7 @@ const ProductDetailPage = () => {
           </Col>
         </Row>
 
-        {/* Tab đánh giá */}
+        {/* PHẦN ĐÁNH GIÁ */}
         <Card style={{ marginTop: 40 }}>
           <Tabs items={[
             {

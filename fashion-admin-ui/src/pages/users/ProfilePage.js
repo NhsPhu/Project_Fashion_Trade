@@ -1,111 +1,143 @@
 // src/pages/user/ProfilePage.js
-
 import React, { useEffect, useState, useCallback } from 'react';
-import { Card, Form, Input, Button, Row, Col, List, Switch, message, Typography, Space } from 'antd';
-import { LogoutOutlined } from '@ant-design/icons';
+import { Card, Form, Input, Button, List, Tag, Table, Tabs, message, Typography, Avatar } from 'antd';
+import { UserOutlined, ShoppingOutlined, EnvironmentOutlined, LogoutOutlined } from '@ant-design/icons';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
+// --- SỬA LỖI TẠI ĐÂY ---
+// SAI: import { useAuth } from '../../contexts/AuthContext';
+// ĐÚNG:
+import { useUserAuth } from '../../contexts/UserAuthContext';
+// ------------------------
+
 import UserProfileService from '../../services/user/UserProfileService';
-// 1. SỬA LỖI: Import hook 'useAuth' HỢP NHẤT
-import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
 const ProfilePage = () => {
-    const [form] = Form.useForm();
-    const [addresses, setAddresses] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    // 2. SỬA LỖI: Lấy hàm logout từ hook HỢP NHẤT
-    const { logout } = useAuth();
+    const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
 
-    // BỌC load TRONG useCallback
-    const load = useCallback(async () => {
+    // --- SỬA LỖI TẠI ĐÂY ---
+    // SAI: const { logout } = useAuth();
+    // ĐÚNG:
+    const { logout, user } = useUserAuth();
+    // ------------------------
+
+    const activeTab = searchParams.get('tab') || 'info';
+    const [loading, setLoading] = useState(true);
+    const [profile, setProfile] = useState({});
+    const [addresses, setAddresses] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [form] = Form.useForm();
+
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const p = await UserProfileService.getProfile();
-            form.setFieldsValue({ fullName: p.fullName, phone: p.phone, avatar: p.avatar });
-            const addr = await UserProfileService.getAddresses();
+            // Đảm bảo UserProfileService đã có hàm getMyOrders như hướng dẫn trước
+            const [p, addr, ord] = await Promise.all([
+                UserProfileService.getProfile(),
+                UserProfileService.getAddresses(),
+                UserProfileService.getMyOrders()
+            ]);
+
+            setProfile(p);
             setAddresses(addr);
+            setOrders(ord || []);
+
+            form.setFieldsValue({
+                fullName: p.fullName,
+                phone: p.phone,
+                email: p.email
+            });
         } catch (e) {
-            // ignore
+            console.error("Lỗi tải profile", e);
         } finally {
             setLoading(false);
         }
-    }, [form]); // Thêm form vào dependency
+    }, [form]);
 
-    // ĐÃ THÊM load VÀO DEPENDENCY
     useEffect(() => {
-        load();
-    }, [load]);
+        loadData();
+    }, [loadData]);
 
-    const onSave = async (values) => {
-        await UserProfileService.updateProfile(values);
-        message.success('Đã cập nhật hồ sơ');
-        await load();
+    const handleUpdateProfile = async (values) => {
+        try {
+            await UserProfileService.updateProfile(values);
+            message.success('Cập nhật thành công!');
+            loadData();
+        } catch (e) {
+            message.error('Lỗi cập nhật');
+        }
     };
 
     const handleLogout = () => {
         logout();
-        // 3. SỬA LỖI: Điều hướng về trang login CHUNG
         navigate('/login');
     };
 
+    // ... (Phần render các Tab giữ nguyên như code tôi gửi trước đó)
+    // Để ngắn gọn, tôi chỉ hiển thị phần thay đổi logic chính ở trên.
+    // Bạn hãy dùng lại phần return và renderTabs của phiên bản trước.
+
+    // NẾU BẠN CẦN CODE RENDER ĐẦY ĐỦ, HÃY COPY ĐOẠN DƯỚI ĐÂY VÀO SAU handleLogout:
+
+    const renderInfo = () => (
+        <Card bordered={false}>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <Avatar size={100} icon={<UserOutlined />} src={profile.avatar} />
+                <h3 style={{ marginTop: 10 }}>{profile.fullName}</h3>
+                <Tag color="blue">Thành viên</Tag>
+            </div>
+            <Form layout="vertical" form={form} onFinish={handleUpdateProfile}>
+                <Form.Item label="Email" name="email"><Input disabled /></Form.Item>
+                <Form.Item label="Họ tên" name="fullName" rules={[{ required: true }]}><Input /></Form.Item>
+                <Form.Item label="Số điện thoại" name="phone"><Input /></Form.Item>
+                <Button type="primary" htmlType="submit">Lưu thay đổi</Button>
+            </Form>
+        </Card>
+    );
+
+    const renderOrders = () => {
+        const columns = [
+            { title: 'Mã đơn', dataIndex: 'orderNo', key: 'orderNo' },
+            { title: 'Ngày đặt', dataIndex: 'createdAt', render: t => new Date(t).toLocaleDateString('vi-VN') },
+            { title: 'Tổng tiền', dataIndex: 'finalAmount', render: t => `${t?.toLocaleString()} đ` },
+            { title: 'Trạng thái', dataIndex: 'orderStatus', render: s => <Tag>{s}</Tag> },
+        ];
+        return <Table dataSource={orders} columns={columns} rowKey="id" pagination={{ pageSize: 5 }} />;
+    };
+
+    const renderAddresses = () => (
+        <List
+            grid={{ gutter: 16, column: 1 }}
+            dataSource={addresses}
+            renderItem={item => (
+                <List.Item>
+                    <Card title={item.name} size="small" extra={item.isDefault ? <Tag color="green">Mặc định</Tag> : null}>
+                        <p><b>SĐT:</b> {item.phone}</p>
+                        <p><b>Địa chỉ:</b> {item.addressLine}, {item.district}, {item.city}</p>
+                    </Card>
+                </List.Item>
+            )}
+        />
+    );
+
+    const items = [
+        { key: 'info', label: <span><UserOutlined /> Cá nhân</span>, children: renderInfo() },
+        { key: 'orders', label: <span><ShoppingOutlined /> Đơn hàng</span>, children: renderOrders() },
+        { key: 'addresses', label: <span><EnvironmentOutlined /> Địa chỉ</span>, children: renderAddresses() },
+    ];
+
     return (
-        <div style={{ maxWidth: 1000, margin: '0 auto', padding: 24 }}>
-            <Title level={2}>Hồ sơ của tôi</Title>
-            <Row gutter={24}>
-                <Col xs={24} md={12}>
-                    <Card title="Thông tin cá nhân" loading={loading}>
-                        <Form layout="vertical" form={form} onFinish={onSave}>
-                            <Form.Item name="fullName" label="Họ tên">
-                                <Input />
-                            </Form.Item>
-                            <Form.Item name="phone" label="Số điện thoại">
-                                <Input />
-                            </Form.Item>
-                            <Form.Item name="avatar" label="Avatar URL">
-                                <Input />
-                            </Form.Item>
-                            <Form.Item>
-                                <Button type="primary" htmlType="submit">Lưu</Button>
-                            </Form.Item>
-                        </Form>
-                    </Card>
-                </Col>
-
-                <Col xs={24} md={12}>
-                    <Card title="Địa chỉ" loading={loading}>
-                        <List
-                            dataSource={addresses}
-                            renderItem={(addr) => (
-                                <List.Item>
-                                    <List.Item.Meta
-                                        title={`${addr.name} - ${addr.phone}`}
-                                        description={`${addr.addressLine}, ${addr.district}, ${addr.city}, ${addr.province}`}
-                                    />
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span>Mặc định</span>
-                                        <Switch checked={addr.isDefault} disabled />
-                                    </div>
-                                </List.Item>
-                            )}
-                        />
-                    </Card>
-                </Col>
-            </Row>
-
-            {/* NÚT ĐĂNG XUẤT */}
-            <Space style={{ marginTop: 24, width: '100%', justifyContent: 'center' }}>
-                <Button
-                    type="danger"
-                    icon={<LogoutOutlined />}
-                    onClick={handleLogout}
-                    size="large"
-                >
-                    Đăng xuất
-                </Button>
-            </Space>
+        <div style={{ maxWidth: 1000, margin: '20px auto', padding: '0 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <Title level={2}>Tài khoản của tôi</Title>
+                <Button danger icon={<LogoutOutlined />} onClick={handleLogout}>Đăng xuất</Button>
+            </div>
+            <Card loading={loading}>
+                <Tabs activeKey={activeTab} onChange={(key) => setSearchParams({ tab: key })} items={items} />
+            </Card>
         </div>
     );
 };

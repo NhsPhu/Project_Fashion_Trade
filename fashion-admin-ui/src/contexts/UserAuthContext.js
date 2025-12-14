@@ -1,34 +1,20 @@
 // src/user/contexts/UserAuthContext.js
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
-import UserAuthService from '../services/user/UserAuthService';
-
-// --- SỬA LỖI: Import TOKEN_KEY (tên mới) thay vì CUSTOMER_TOKEN_KEY ---
-import { TOKEN_KEY } from '../services/user/httpClient';
+// IMPORT MỚI: Dùng AuthService chung
+import AuthService from '../services/AuthService';
 
 const UserAuthContext = createContext();
 
 export const UserAuthProvider = ({ children }) => {
-    // Sửa tên biến sử dụng ở đây luôn
-    const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
+    // Khởi tạo state từ AuthService
+    const [token, setToken] = useState(AuthService.getToken());
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const parseJwt = (token) => {
-        try {
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        } catch (e) {
-            return null;
-        }
-    };
-
+    // Effect: Khi token thay đổi, cập nhật user info
     useEffect(() => {
         if (token) {
-            const decoded = parseJwt(token);
+            const decoded = AuthService.getCurrentUser();
             setUser(decoded);
         } else {
             setUser(null);
@@ -38,14 +24,11 @@ export const UserAuthProvider = ({ children }) => {
     const login = async (email, password) => {
         setIsLoading(true);
         try {
-            const data = await UserAuthService.login(email, password);
-            const accessToken = data.accessToken || data.token;
+            // Gọi AuthService chung
+            const data = await AuthService.login(email, password);
+            const accessToken = data.token || data.accessToken;
 
-            if (accessToken) {
-                // Sửa: Lưu vào TOKEN_KEY
-                localStorage.setItem(TOKEN_KEY, accessToken);
-                setToken(accessToken);
-            }
+            setToken(accessToken); // Update state để trigger useEffect
             return data;
         } catch (error) {
             throw error;
@@ -55,23 +38,20 @@ export const UserAuthProvider = ({ children }) => {
     };
 
     const logout = () => {
-        UserAuthService.logout();
+        AuthService.logout();
         setToken(null);
         setUser(null);
         window.location.href = '/login';
     };
 
-    const value = useMemo(
-        () => ({
-            token,
-            isAuthenticated: !!token,
-            user,
-            login,
-            logout,
-            isLoading,
-        }),
-        [token, user, isLoading]
-    );
+    const value = useMemo(() => ({
+        token,
+        isAuthenticated: !!token,
+        user,
+        login,
+        logout,
+        isLoading,
+    }), [token, user, isLoading]);
 
     return <UserAuthContext.Provider value={value}>{children}</UserAuthContext.Provider>;
 };

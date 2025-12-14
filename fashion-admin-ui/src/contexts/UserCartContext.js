@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { message } from 'antd';
-import {SESSION_KEY} from "../services/user/httpClient";
+import {SESSION_KEY} from "../services/httpClient";
 import {useUserAuth} from "./UserAuthContext";
 import UserCartService from "../services/user/UserCartService";
 

@@ -7,7 +7,7 @@
 // src/services/ProductService.js
 
 // SỬA: Import 'userApiClient' theo tên và đổi tên nó thành 'httpClient'
-import { userApiClient as httpClient } from './user/httpClient';
+import { userApiClient as httpClient } from '../httpClient';
 // ...
 // ...
 

@@ -14,7 +14,9 @@ import {
     notification,
     Row,
     Col,
-    Spin
+    Spin,
+    Upload,  // <-- 1. THÊM
+    Modal    // <-- 1. THÊM
 } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 
@@ -27,6 +29,15 @@ const formLayout = {
     wrapperCol: { span: 24 },
 };
 
+// Hàm hỗ trợ xem trước ảnh (Base64)
+const getBase64 = (file) =>
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+    });
+
 function ProductEditPage() {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -37,7 +48,15 @@ function ProductEditPage() {
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // useEffect để Tải và Điền (Fill) dữ liệu
+    // State cho Modal Preview ảnh
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState('');
+    const [previewTitle, setPreviewTitle] = useState('');
+
+    // State lưu danh sách file ảnh cho Upload component
+    const [fileList, setFileList] = useState([]);
+
+    // 1. Tải dữ liệu ban đầu
     useEffect(() => {
         const loadData = async () => {
             try {
@@ -47,22 +66,34 @@ function ProductEditPage() {
                     BrandService.getAllBrands()
                 ]);
 
-                setCategories(catData);
-                setBrands(brandData);
+                setCategories(catData || []);
+                setBrands(brandData || []);
 
-                // Đây là phần "Fill thông tin"
+                // --- XỬ LÝ ẢNH TỪ API ĐỂ HIỂN THỊ TRONG UPLOAD ---
+                // API trả về: [{id: 1, url: "http...", altText: "..."}]
+                // Upload cần: [{uid: "1", name: "image.png", status: "done", url: "http..."}]
+                const initialFileList = (productData.images || []).map((img, index) => ({
+                    uid: img.id ? String(img.id) : `-${index}`, // uid phải là string unique
+                    name: img.altText || `Image-${index}`,
+                    status: 'done',
+                    url: img.url,
+                    response: { url: img.url } // Giả lập response để logic submit tái sử dụng được
+                }));
+                setFileList(initialFileList);
+                // ------------------------------------------------
+
+                // Fill thông tin vào Form
                 form.setFieldsValue({
                     name: productData.name,
                     slug: productData.slug,
                     description: productData.description,
                     status: productData.status,
-                    defaultImage: productData.defaultImage,
                     categoryId: productData.categoryId,
                     brandId: productData.brandId,
                     seoMetaTitle: productData.seoMetaTitle,
                     seoMetaDesc: productData.seoMetaDesc,
                     variants: productData.variants,
-                    images: productData.images
+                    // images: productData.images // Không set trực tiếp images vào form value kiểu cũ nữa
                 });
 
                 setLoading(false);
@@ -74,15 +105,72 @@ function ProductEditPage() {
         loadData();
     }, [id, form]);
 
-    // Hàm Submit (Cập nhật)
+    // 2. Xử lý Upload ảnh mới
+    const handleUpload = async (options) => {
+        const { file, onSuccess, onError } = options;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await ProductService.uploadImage(formData);
+            const imageUrl = response.url;
+
+            // Báo cho Upload component biết đã xong
+            onSuccess({ url: imageUrl }, file);
+            notification.success({ message: 'Đã tải ảnh lên xong!' });
+        } catch (err) {
+            onError(err);
+            notification.error({ message: 'Lỗi upload ảnh', description: err.message });
+        }
+    };
+
+    // 3. Xử lý thay đổi file list (thêm/xóa ảnh)
+    const handleChange = ({ fileList: newFileList }) => setFileList(newFileList);
+
+    // 4. Xử lý xem trước ảnh
+    const handleCancelPreview = () => setPreviewOpen(false);
+    const handlePreview = async (file) => {
+        if (!file.url && !file.preview) {
+            file.preview = await getBase64(file.originFileObj);
+        }
+        setPreviewImage(file.url || file.preview);
+        setPreviewOpen(true);
+        setPreviewTitle(file.name || file.url.substring(file.url.lastIndexOf('/') + 1));
+    };
+
+    // 5. Submit Form
     const onFinish = async (values) => {
         setIsSubmitting(true);
         try {
+            // --- XỬ LÝ DANH SÁCH ẢNH TỪ FILELIST ---
+            // Lọc ra các file hợp lệ (đã có url từ server hoặc upload thành công)
+            const processedImages = fileList.map((file, index) => {
+                if (file.response && file.response.url) {
+                    return {
+                        url: file.response.url,
+                        altText: file.name,
+                        order: index
+                    };
+                } else if (file.url) { // Trường hợp ảnh cũ có sẵn URL
+                    return {
+                        url: file.url,
+                        altText: file.name,
+                        order: index
+                    };
+                }
+                return null;
+            }).filter(Boolean);
+
+            // Tự động chọn ảnh đầu tiên làm defaultImage nếu chưa có
+            const defaultImg = processedImages.length > 0 ? processedImages[0].url : null;
+
             const productData = {
                 ...values,
                 variants: values.variants || [],
-                images: values.images || []
+                images: processedImages,
+                defaultImage: defaultImg
             };
+
             await ProductService.updateProduct(id, productData);
             notification.success({ message: 'Cập nhật thành công!' });
             navigate('/admin/products');
@@ -92,13 +180,19 @@ function ProductEditPage() {
         }
     };
 
+    const uploadButton = (
+        <div>
+            <PlusOutlined />
+            <div style={{ marginTop: 8 }}>Upload</div>
+        </div>
+    );
+
     if (loading) {
         return <Spin tip="Đang tải dữ liệu sản phẩm..." size="large" fullscreen />;
     }
 
     return (
         <div style={{ maxWidth: '1000px', margin: 'auto' }}>
-            {/* Đã xóa nút "Tạo bản sao" khỏi đây */}
             <Title level={2}>Chỉnh sửa Sản phẩm (ID: {id})</Title>
 
             <Form
@@ -107,16 +201,29 @@ function ProductEditPage() {
                 name="edit_product"
                 onFinish={onFinish}
             >
-                {/* (Nội dung Form y hệt như ProductCreatePage) */}
                 <Row gutter={24}>
                     <Col span={16}>
-                        {/* ... (Các Form.Item cho name, description) ... */}
                         <Form.Item name="name" label="Tên sản phẩm" rules={[{ required: true }]}>
                             <Input />
                         </Form.Item>
                         <Form.Item name="description" label="Mô tả">
                             <TextArea rows={4} />
                         </Form.Item>
+
+                        {/* --- KHU VỰC UPLOAD ẢNH --- */}
+                        <Form.Item label="Hình ảnh sản phẩm">
+                            <Upload
+                                listType="picture-card"
+                                fileList={fileList}       // Liên kết với state fileList
+                                onPreview={handlePreview} // Xem trước
+                                onChange={handleChange}   // Cập nhật list khi thêm/xóa
+                                customRequest={handleUpload} // Upload lên server thật
+                                accept="image/*"
+                            >
+                                {fileList.length >= 8 ? null : uploadButton}
+                            </Upload>
+                        </Form.Item>
+                        {/* ------------------------- */}
 
                         {/* Variants */}
                         <Form.Item label="Biến thể sản phẩm (Variants)">
@@ -125,19 +232,21 @@ function ProductEditPage() {
                                     <div style={{ display: 'flex', flexDirection: 'column', rowGap: 16 }}>
                                         {fields.map(({ key, name, ...restField }) => (
                                             <Space key={key} style={{ display: 'flex' }} align="baseline">
-                                                <Form.Item {...restField} name={[name, 'sku']} rules={[{ required: true }]}>
+                                                <Form.Item {...restField} name={[name, 'sku']} rules={[{ required: true, message: 'Nhập SKU' }]}>
                                                     <Input placeholder="SKU" />
                                                 </Form.Item>
-                                                <Form.Item {...restField} name={[name, 'attributes']}>
-                                                    <Input placeholder='{"size":"M"}' />
-                                                </Form.Item>
                                                 <Form.Item {...restField} name={[name, 'price']} rules={[{ required: true }]}>
-                                                    <InputNumber placeholder="Giá" min={0} style={{width: '100%'}} />
+                                                    <InputNumber
+                                                        placeholder="Giá"
+                                                        min={0}
+                                                        style={{ width: 120 }}
+                                                        formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                                                    />
                                                 </Form.Item>
                                                 <Form.Item {...restField} name={[name, 'stockQuantity']} rules={[{ required: true }]}>
-                                                    <InputNumber placeholder="Tồn kho" min={0} style={{width: '100%'}} />
+                                                    <InputNumber placeholder="Tồn kho" min={0} style={{ width: 100 }} />
                                                 </Form.Item>
-                                                <MinusCircleOutlined onClick={() => remove(name)} />
+                                                <MinusCircleOutlined onClick={() => remove(name)} style={{color: 'red'}} />
                                             </Space>
                                         ))}
                                         <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
@@ -147,35 +256,9 @@ function ProductEditPage() {
                                 )}
                             </Form.List>
                         </Form.Item>
-
-                        {/* Images */}
-                        <Form.Item label="Hình ảnh sản phẩm">
-                            <Form.List name="images">
-                                {(fields, { add, remove }) => (
-                                    <div style={{ display: 'flex', flexDirection: 'column', rowGap: 16 }}>
-                                        {fields.map(({ key, name, ...restField }) => (
-                                            <Space key={key} style={{ display: 'flex' }} align="baseline">
-                                                <Form.Item {...restField} name={[name, 'url']} rules={[{ required: true }]}>
-                                                    <Input placeholder="URL Hình ảnh" style={{width: '300px'}} />
-                                                </Form.Item>
-                                                <Form.Item {...restField} name={[name, 'altText']}>
-                                                    <Input placeholder="Alt Text" />
-                                                </Form.Item>
-                                                <MinusCircleOutlined onClick={() => remove(name)} />
-                                            </Space>
-                                        ))}
-                                        <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                                            Thêm hình ảnh
-                                        </Button>
-                                    </div>
-                                )}
-                            </Form.List>
-                        </Form.Item>
                     </Col>
 
-                    {/* CỘT BÊN PHẢI */}
                     <Col span={8}>
-                        {/* ... (Các Form.Item cho status, categoryId, brandId, v.v...) ... */}
                         <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
                             <Select>
                                 <Option value="Draft">Bản nháp</Option>
@@ -183,6 +266,7 @@ function ProductEditPage() {
                                 <Option value="Archived">Lưu trữ</Option>
                             </Select>
                         </Form.Item>
+
                         <Form.Item name="categoryId" label="Danh mục" rules={[{ required: true }]}>
                             <Select placeholder="-- Chọn Danh mục --">
                                 {categories.map(cat => (
@@ -190,6 +274,7 @@ function ProductEditPage() {
                                 ))}
                             </Select>
                         </Form.Item>
+
                         <Form.Item name="brandId" label="Thương hiệu" rules={[{ required: true }]}>
                             <Select placeholder="-- Chọn Thương hiệu --">
                                 {brands.map(brand => (
@@ -197,16 +282,27 @@ function ProductEditPage() {
                                 ))}
                             </Select>
                         </Form.Item>
-                        {/* ... (Các Form.Item khác) ... */}
+
+                        <Form.Item name="seoMetaTitle" label="SEO Title">
+                            <Input placeholder="Tiêu đề SEO" />
+                        </Form.Item>
+                        <Form.Item name="seoMetaDesc" label="SEO Description">
+                            <TextArea rows={2} placeholder="Mô tả SEO" />
+                        </Form.Item>
                     </Col>
                 </Row>
 
                 <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={isSubmitting} style={{marginTop: '20px'}}>
+                    <Button type="primary" htmlType="submit" loading={isSubmitting} size="large" block style={{marginTop: '20px'}}>
                         Lưu Cập nhật
                     </Button>
                 </Form.Item>
             </Form>
+
+            {/* Modal Xem trước ảnh */}
+            <Modal open={previewOpen} title={previewTitle} footer={null} onCancel={handleCancelPreview}>
+                <img alt="example" style={{ width: '100%' }} src={previewImage} />
+            </Modal>
         </div>
     );
 }

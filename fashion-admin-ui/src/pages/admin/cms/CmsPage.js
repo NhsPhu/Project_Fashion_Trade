@@ -2,7 +2,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Form, Input, Button, Table, Modal, Switch, message, Space } from 'antd';
 import { Editor } from '@tinymce/tinymce-react';
-import ApiService from '../../../services/ApiService';
+
+// SỬA: Import apiClient từ AuthService để có Token (Thay vì ApiService)
+import { apiClient } from '../../../services/AuthService';
 
 function CmsPage() {
     const [pages, setPages] = useState([]);
@@ -19,14 +21,13 @@ function CmsPage() {
     const fetchPages = async () => {
         setLoading(true);
         try {
-            const response = await ApiService.get('/admin/cms/pages');
+            // SỬA: Dùng apiClient.get
+            const response = await apiClient.get('/admin/cms/pages');
             const rawData = response?.data ?? response;
 
-            console.log('API Response:', rawData); // Debug: Xem cấu trúc dữ liệu
+            console.log('API Response:', rawData);
 
             let pageList = [];
-
-            // Xử lý nhiều định dạng trả về phổ biến
             if (Array.isArray(rawData)) {
                 pageList = rawData;
             } else if (rawData?.pages && Array.isArray(rawData.pages)) {
@@ -36,27 +37,24 @@ function CmsPage() {
             } else if (rawData?.items && Array.isArray(rawData.items)) {
                 pageList = rawData.items;
             } else {
-                console.warn('API trả về không phải mảng:', rawData);
-                message.warning('Dữ liệu trang không hợp lệ từ server');
+                // Nếu backend chưa trả về gì thì để mảng rỗng, không báo lỗi làm phiền
+                pageList = [];
             }
 
             setPages(pageList);
         } catch (error) {
-            console.error('Lỗi tải trang:', error.response || error);
-            message.error(
-                'Không thể tải trang: ' +
-                (error.response?.status === 404
-                    ? 'API không tồn tại'
-                    : error.response?.data?.message || error.message)
-            );
-            setPages([]); // Luôn đảm bảo là mảng
+            console.error('Lỗi tải trang:', error);
+            // Chỉ báo lỗi nếu không phải 404 (Lần đầu chưa có data thì 404 là bình thường)
+            if (error.response?.status !== 404) {
+                message.error('Không thể tải danh sách trang');
+            }
+            setPages([]);
         } finally {
             setLoading(false);
         }
     };
 
     const handleSave = async () => {
-        console.log('Bắt đầu lưu trang...');
         try {
             const values = await form.validateFields();
             const content = editorRef.current?.getContent() || '';
@@ -70,13 +68,13 @@ function CmsPage() {
                 published: values.published ?? false,
             };
 
-            console.log('Gửi API:', payload);
-
             if (editingPage) {
-                await ApiService.put(`/admin/cms/pages/${editingPage.id}`, payload);
+                // SỬA: Dùng apiClient.put
+                await apiClient.put(`/admin/cms/pages/${editingPage.id}`, payload);
                 message.success('Cập nhật trang thành công!');
             } else {
-                await ApiService.post('/admin/cms/pages', payload);
+                // SỬA: Dùng apiClient.post
+                await apiClient.post('/admin/cms/pages', payload);
                 message.success('Tạo trang mới thành công!');
             }
 
@@ -85,7 +83,7 @@ function CmsPage() {
         } catch (error) {
             console.error('Lỗi khi lưu:', error);
             if (error.errorFields) {
-                message.error('Vui lòng điền đầy đủ các trường bắt buộc');
+                message.warning('Vui lòng điền đầy đủ các trường bắt buộc');
             } else {
                 const msg = error.response?.data?.message || error.message || 'Lỗi không xác định';
                 message.error('Lỗi lưu trang: ' + msg);
@@ -95,7 +93,8 @@ function CmsPage() {
 
     const handleDelete = async (id) => {
         try {
-            await ApiService.delete(`/admin/cms/pages/${id}`);
+            // SỬA: Dùng apiClient.delete
+            await apiClient.delete(`/admin/cms/pages/${id}`);
             message.success('Xóa trang thành công');
             fetchPages();
         } catch (error) {
@@ -119,7 +118,6 @@ function CmsPage() {
 
         form.setFieldsValue(defaultValues);
 
-        // Xử lý editor
         if (editorRef.current) {
             editorRef.current.setContent(page?.content || '');
         }
@@ -174,6 +172,7 @@ function CmsPage() {
                 columns={columns}
                 rowKey={(record) => record.id || Math.random()}
                 pagination={{ pageSize: 10 }}
+                locale={{ emptyText: 'Chưa có trang nội dung nào' }}
             />
 
             <Modal
@@ -184,7 +183,8 @@ function CmsPage() {
                 width={900}
                 okText="Lưu"
                 cancelText="Hủy"
-                destroyOnClose
+                // SỬA: destroyOnClose -> destroyOnHidden để tránh cảnh báo deprecated
+                destroyOnHidden={true}
             >
                 <Form form={form} layout="vertical" preserve={false}>
                     <Form.Item
@@ -209,6 +209,7 @@ function CmsPage() {
                     <Form.Item label="Nội dung">
                         <Editor
                             onInit={(evt, editor) => (editorRef.current = editor)}
+                            // API Key miễn phí của TinyMCE (nếu hết hạn nó sẽ hiện warning, vẫn dùng được)
                             apiKey="jj3q1jbu0buc788s11llnj1jrt2ks3f61is7ibarmje5flgc"
                             initialValue=""
                             init={{

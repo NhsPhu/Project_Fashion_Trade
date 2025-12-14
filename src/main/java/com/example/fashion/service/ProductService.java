@@ -1,4 +1,3 @@
-// src/main/java/com/example/fashion/service/ProductService.java
 package com.example.fashion.service;
 
 import com.example.fashion.dto.*;
@@ -9,8 +8,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -18,127 +18,166 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
-    private final ProductVariantRepository productVariantRepository;
-    private final ProductImageRepository productImageRepository;
+    // Không cần 2 repository con ở đây nữa vì ta sẽ dùng Cascade của JPA
 
     public ProductService(ProductRepository productRepository,
                           CategoryRepository categoryRepository,
-                          BrandRepository brandRepository,
-                          ProductVariantRepository productVariantRepository,
-                          ProductImageRepository productImageRepository) {
+                          BrandRepository brandRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.brandRepository = brandRepository;
-        this.productVariantRepository = productVariantRepository;
-        this.productImageRepository = productImageRepository;
     }
 
     /**
-     * CHỨC NĂNG TẠO (CREATE)
+     * CHỨC NĂNG TẠO (CREATE) - Giữ nguyên
      */
     @Transactional
     public ProductResponseDTO createProduct(ProductCreateRequestDTO request) {
-
+        // ... (Logic tìm Category/Brand giữ nguyên)
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Category ID: " + request.getCategoryId()));
-
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Brand ID: " + request.getBrandId()));
 
         Product product = new Product();
-        // (Sao chép các trường từ request sang product)
         this.mapRequestToProduct(product, request.getName(), request.getSlug(), request.getDescription(),
                 request.getStatus(), request.getDefaultImage(), category, brand,
                 request.getSeoMetaTitle(), request.getSeoMetaDesc());
 
-        // Xử lý Variants
-        Set<ProductVariant> variants = this.mapVariantDTOsToEntities(product, request.getVariants());
-        product.setVariants(variants);
+        // Map variants mới
+        if (request.getVariants() != null) {
+            Set<ProductVariant> variants = new HashSet<>();
+            for (ProductVariantRequestDTO dto : request.getVariants()) {
+                ProductVariant v = new ProductVariant();
+                mapDtoToVariant(v, dto); // Hàm helper mới
+                v.setProduct(product);
+                variants.add(v);
+            }
+            product.setVariants(variants);
+        }
 
-        // Xử lý Images
-        Set<ProductImage> images = this.mapImageDTOsToEntities(product, request.getImages());
-        product.setImages(images);
+        // Map images mới
+        if (request.getImages() != null) {
+            Set<ProductImage> images = new HashSet<>();
+            for (ProductImageRequestDTO dto : request.getImages()) {
+                ProductImage i = new ProductImage();
+                i.setUrl(dto.getUrl());
+                i.setAltText(dto.getAltText());
+                i.setProduct(product);
+                images.add(i);
+            }
+            product.setImages(images);
+        }
 
-        Product savedProduct = productRepository.save(product);
-        return ProductResponseDTO.fromProduct(savedProduct);
+        return ProductResponseDTO.fromProduct(productRepository.save(product));
     }
 
     /**
-     * CHỨC NĂNG ĐỌC (READ) - LẤY DANH SÁCH + PHÂN TRANG
-     */
-    public Page<ProductResponseDTO> getAllProducts(Pageable pageable) {
-
-        // SỬA LỖI N+1:
-        // Page<Product> productPage = productRepository.findAll(pageable); // <-- Lỗi cũ
-        Page<Product> productPage = productRepository.findAllWithVariants(pageable); // <-- ĐÃ SỬA
-
-        // 2. Chuyển đổi (map) trang Entity sang trang DTO
-        return productPage.map(ProductResponseDTO::fromProduct);
-    }
-
-    /**
-     * CHỨC NĂNG ĐỌC (READ) - LẤY MỘT SẢN PHẨM
-     */
-    public ProductResponseDTO getProductById(Long productId) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Product ID: " + productId));
-        return ProductResponseDTO.fromProduct(product);
-    }
-
-    /**
-     * CHỨC NĂNG CẬP NHẬT (UPDATE)
+     * CHỨC NĂNG CẬP NHẬT (UPDATE) - ĐÃ SỬA LOGIC
      */
     @Transactional
     public ProductResponseDTO updateProduct(Long productId, ProductUpdateRequestDTO request) {
-        // 1. Tìm sản phẩm
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Product ID: " + productId));
 
-        // 2. Tìm Category và Brand
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Category ID: " + request.getCategoryId()));
-
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Brand ID: " + request.getBrandId()));
 
-        // 3. Cập nhật thông tin cơ bản
+        // 1. Cập nhật thông tin chung
         this.mapRequestToProduct(product, request.getName(), request.getSlug(), request.getDescription(),
                 request.getStatus(), request.getDefaultImage(), category, brand,
                 request.getSeoMetaTitle(), request.getSeoMetaDesc());
 
-        // 4. Cập nhật Variants và Images (Cách đơn giản: Xóa cũ, thêm mới)
-        product.getVariants().clear();
-        product.getImages().clear();
-        productVariantRepository.deleteAll(product.getVariants());
-        productImageRepository.deleteAll(product.getImages());
+        // 2. CẬP NHẬT VARIANTS (Thông minh: Update cái cũ, Thêm cái mới, Xóa cái thừa)
+        updateVariants(product, request.getVariants());
 
-        Set<ProductVariant> newVariants = this.mapVariantDTOsToEntities(product, request.getVariants());
-        product.getVariants().addAll(newVariants);
+        // 3. CẬP NHẬT IMAGES (Logic tương tự: Xóa hết set lại cho nhanh vì Image ít ràng buộc)
+        // Với Image thì xóa đi tạo lại ít rủi ro hơn Variant (vì Variant dính tới đơn hàng/kho)
+        if (request.getImages() != null) {
+            product.getImages().clear(); // Xóa list cũ (Hibernate orphanRemoval sẽ xóa DB)
+            for (ProductImageRequestDTO imgDto : request.getImages()) {
+                ProductImage img = new ProductImage();
+                img.setUrl(imgDto.getUrl());
+                img.setAltText(imgDto.getAltText());
+                img.setProduct(product);
+                product.getImages().add(img);
+            }
+        }
 
-        Set<ProductImage> newImages = this.mapImageDTOsToEntities(product, request.getImages());
-        product.getImages().addAll(newImages);
-
-        // 5. Lưu lại
-        Product updatedProduct = productRepository.save(product);
-        return ProductResponseDTO.fromProduct(updatedProduct);
+        return ProductResponseDTO.fromProduct(productRepository.save(product));
     }
 
-    /**
-     * CHỨC NĂNG XÓA (DELETE) - Soft Delete
-     */
+    // =================================================================
+    // LOGIC CỐT LÕI ĐỂ SỬA LỖI DUPLICATE ENTRY
+    // =================================================================
+    private void updateVariants(Product product, Set<ProductVariantRequestDTO> newVariantDtos) {
+        if (newVariantDtos == null) return;
+
+        // Tạo Map từ danh sách variant HIỆN CÓ trong DB (Key là SKU)
+        Map<String, ProductVariant> existingVariantsMap = product.getVariants().stream()
+                .collect(Collectors.toMap(ProductVariant::getSku, Function.identity()));
+
+        Set<ProductVariant> updatedVariants = new HashSet<>();
+
+        for (ProductVariantRequestDTO dto : newVariantDtos) {
+            // Kiểm tra xem SKU này đã có chưa
+            ProductVariant variant = existingVariantsMap.get(dto.getSku());
+
+            if (variant != null) {
+                // TRƯỜNG HỢP 1: Đã có -> Cập nhật thông tin (Giữ nguyên ID)
+                mapDtoToVariant(variant, dto);
+                updatedVariants.add(variant);
+                // Xóa khỏi map để lát nữa biết cái nào thừa
+                existingVariantsMap.remove(dto.getSku());
+            } else {
+                // TRƯỜNG HỢP 2: Chưa có -> Tạo mới (INSERT)
+                ProductVariant newVariant = new ProductVariant();
+                mapDtoToVariant(newVariant, dto);
+                newVariant.setProduct(product);
+                updatedVariants.add(newVariant);
+            }
+        }
+
+        // Bước này quan trọng: Thay thế set cũ bằng set mới đã xử lý
+        // Hibernate sẽ tự động:
+        // - Update những cái cũ được sửa
+        // - Insert những cái mới thêm
+        // - Delete những cái cũ không còn trong danh sách (những cái còn lại trong existingVariantsMap)
+        product.getVariants().clear();
+        product.getVariants().addAll(updatedVariants);
+    }
+
+    // Hàm helper map dữ liệu variant
+    private void mapDtoToVariant(ProductVariant v, ProductVariantRequestDTO dto) {
+        v.setSku(dto.getSku());
+        v.setPrice(dto.getPrice());
+        v.setSalePrice(dto.getSalePrice());
+        v.setStockQuantity(dto.getStockQuantity());
+        v.setWeight(dto.getWeight());
+        v.setAttributes(dto.getAttributes());
+    }
+
+    // =================================================================
+    // CÁC HÀM KHÁC GIỮ NGUYÊN
+    // =================================================================
+    public Page<ProductResponseDTO> getAllProducts(Pageable pageable) {
+        return productRepository.findAllWithVariants(pageable).map(ProductResponseDTO::fromProduct);
+    }
+
+    public ProductResponseDTO getProductById(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        return ProductResponseDTO.fromProduct(product);
+    }
+
     @Transactional
     public void deleteProduct(Long productId) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy Product ID: " + productId));
-
+        Product product = productRepository.findById(productId).orElseThrow();
         product.setStatus("Archived");
         productRepository.save(product);
     }
-
-
-    // =================================================================
-    // CÁC HÀM TIỆN ÍCH (PRIVATE HELPERS)
-    // =================================================================
 
     private void mapRequestToProduct(Product product, String name, String slug, String desc,
                                      String status, String defaultImage, Category category,
@@ -152,38 +191,5 @@ public class ProductService {
         product.setBrand(brand);
         product.setSeoMetaTitle(seoTitle);
         product.setSeoMetaDesc(seoDesc);
-    }
-
-    private Set<ProductVariant> mapVariantDTOsToEntities(Product product, Set<ProductVariantRequestDTO> variantDTOs) {
-        Set<ProductVariant> variants = new HashSet<>();
-        if (variantDTOs != null) {
-            for (ProductVariantRequestDTO variantDTO : variantDTOs) {
-                ProductVariant variant = new ProductVariant();
-                variant.setSku(variantDTO.getSku());
-                variant.setAttributes(variantDTO.getAttributes());
-                variant.setPrice(variantDTO.getPrice());
-                variant.setSalePrice(variantDTO.getSalePrice());
-                variant.setStockQuantity(variantDTO.getStockQuantity());
-                variant.setWeight(variantDTO.getWeight());
-                variant.setProduct(product); // Liên kết lại
-                variants.add(variant);
-            }
-        }
-        return variants;
-    }
-
-    private Set<ProductImage> mapImageDTOsToEntities(Product product, Set<ProductImageRequestDTO> imageDTOs) {
-        Set<ProductImage> images = new HashSet<>();
-        if (imageDTOs != null) {
-            for (ProductImageRequestDTO imageDTO : imageDTOs) {
-                ProductImage image = new ProductImage();
-                image.setUrl(imageDTO.getUrl());
-                image.setAltText(imageDTO.getAltText());
-                image.setOrder(imageDTO.getOrder());
-                image.setProduct(product); // Liên kết lại
-                images.add(image);
-            }
-        }
-        return images;
     }
 }
