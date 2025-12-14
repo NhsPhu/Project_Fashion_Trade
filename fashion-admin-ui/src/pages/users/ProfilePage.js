@@ -1,414 +1,113 @@
-// src/user/pages/ProfilePage.js
+// src/pages/user/ProfilePage.js
 
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  Card,
-  Form,
-  Input,
-  Button,
-  Row,
-  Col,
-  List,
-  Switch,
-  message,
-  Typography,
-  Space,
-  Tabs,
-  Tag,
-  Modal,
-  Divider,
-  Tooltip,
-} from 'antd';
-import {
-  LogoutOutlined,
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  HomeOutlined,
-  ShoppingOutlined,
-  HistoryOutlined,
-  StarOutlined,
-} from '@ant-design/icons';
+import { Card, Form, Input, Button, Row, Col, List, Switch, message, Typography, Space } from 'antd';
+import { LogoutOutlined } from '@ant-design/icons';
 import UserProfileService from '../../services/user/UserProfileService';
-import { useUserAuth } from '../../contexts/UserAuthContext';
+// 1. SỬA LỖI: Import hook 'useAuth' HỢP NHẤT
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
 const ProfilePage = () => {
-  const [form] = Form.useForm();
-  const [addressForm] = Form.useForm();
-  const [profile, setProfile] = useState(null);
-  const [addresses, setAddresses] = useState([]);
-  const [activity, setActivity] = useState({ orders: [], reviews: [] });
-  const [loading, setLoading] = useState(true);
-  const [addressModalOpen, setAddressModalOpen] = useState(false);
-  const [editingAddress, setEditingAddress] = useState(null);
+    const [form] = Form.useForm();
+    const [addresses, setAddresses] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-  const { logout } = useUserAuth();
-  const navigate = useNavigate();
+    // 2. SỬA LỖI: Lấy hàm logout từ hook HỢP NHẤT
+    const { logout } = useAuth();
+    const navigate = useNavigate();
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [profileData, addressData, activityData] = await Promise.all([
-        UserProfileService.getProfile(),
-        UserProfileService.getAddresses(),
-        UserProfileService.getActivity(),
-      ]);
-      setProfile(profileData);
-      form.setFieldsValue({
-        fullName: profileData.fullName,
-        phone: profileData.phone,
-        avatar: profileData.avatar,
-        email: profileData.email,
-      });
-      setAddresses(addressData);
-      setActivity(activityData);
-    } catch (e) {
-      message.error('Không thể tải thông tin hồ sơ');
-    } finally {
-      setLoading(false);
-    }
-  }, [form]);
+    // BỌC load TRONG useCallback
+    const load = useCallback(async () => {
+        setLoading(true);
+        try {
+            const p = await UserProfileService.getProfile();
+            form.setFieldsValue({ fullName: p.fullName, phone: p.phone, avatar: p.avatar });
+            const addr = await UserProfileService.getAddresses();
+            setAddresses(addr);
+        } catch (e) {
+            // ignore
+        } finally {
+            setLoading(false);
+        }
+    }, [form]); // Thêm form vào dependency
 
-  useEffect(() => {
-    load();
-  }, [load]);
+    // ĐÃ THÊM load VÀO DEPENDENCY
+    useEffect(() => {
+        load();
+    }, [load]);
 
-  const onSave = async (values) => {
-    const payload = {
-      fullName: values.fullName,
-      phone: values.phone,
-      avatar: values.avatar,
-    };
-    await UserProfileService.updateProfile(payload);
-    message.success('Đã cập nhật hồ sơ');
-    await load();
-  };
-
-  const openCreateAddress = () => {
-    setEditingAddress(null);
-    addressForm.resetFields();
-    addressForm.setFieldsValue({
-      defaultShipping: !addresses.some(addr => addr.defaultShipping),
-      defaultBilling: !addresses.some(addr => addr.defaultBilling),
-    });
-    setAddressModalOpen(true);
-  };
-
-  const openEditAddress = (address) => {
-    setEditingAddress(address);
-    addressForm.setFieldsValue({
-      name: address.name,
-      phone: address.phone,
-      addressLine: address.addressLine,
-      city: address.city,
-      district: address.district,
-      province: address.province,
-      postalCode: address.postalCode,
-      defaultShipping: address.defaultShipping,
-      defaultBilling: address.defaultBilling,
-    });
-    setAddressModalOpen(true);
-  };
-
-  const submitAddress = async () => {
-    try {
-      const values = await addressForm.validateFields();
-      if (editingAddress) {
-        await UserProfileService.updateAddress(editingAddress.id, values);
-        message.success('Đã cập nhật địa chỉ');
-      } else {
-        await UserProfileService.addAddress(values);
-        message.success('Đã thêm địa chỉ');
-      }
-      setAddressModalOpen(false);
-      setEditingAddress(null);
-      await load();
-    } catch (e) {
-      if (e?.errorFields) return;
-      message.error(e?.response?.data || 'Không thể lưu địa chỉ');
-    }
-  };
-
-  const handleDeleteAddress = async (addressId) => {
-    Modal.confirm({
-      title: 'Xóa địa chỉ',
-      content: 'Bạn có chắc muốn xóa địa chỉ này?',
-      okType: 'danger',
-      onOk: async () => {
-        await UserProfileService.deleteAddress(addressId);
-        message.success('Đã xóa địa chỉ');
+    const onSave = async (values) => {
+        await UserProfileService.updateProfile(values);
+        message.success('Đã cập nhật hồ sơ');
         await load();
-      },
-    });
-  };
-
-  const handleSetDefault = async (address, type) => {
-    const payload = {
-      name: address.name,
-      phone: address.phone,
-      addressLine: address.addressLine,
-      city: address.city,
-      district: address.district,
-      province: address.province,
-      postalCode: address.postalCode,
-      defaultShipping: type === 'shipping' ? true : address.defaultShipping,
-      defaultBilling: type === 'billing' ? true : address.defaultBilling,
     };
-    await UserProfileService.updateAddress(address.id, payload);
-    await load();
-  };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/user/login');
-  };
+    const handleLogout = () => {
+        logout();
+        // 3. SỬA LỖI: Điều hướng về trang login CHUNG
+        navigate('/login');
+    };
 
-  const handleOrderClick = (orderId) => {
-    // SỬA: Dùng đường dẫn tuyệt đối /orders/...
-    navigate(`/orders/${orderId}`);
-  };
-
-  return (
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: 24 }}>
-        <Title level={2}>Hồ sơ của tôi</Title>
-        <Tabs
-            defaultActiveKey="info"
-            items={[
-              {
-                key: 'info',
-                label: 'Thông tin cá nhân',
-                children: (
-                    <Row gutter={24}>
-                      <Col xs={24} md={12}>
-                        <Card title="Thông tin cơ bản" loading={loading}>
-                          <Form layout="vertical" form={form} onFinish={onSave}>
+    return (
+        <div style={{ maxWidth: 1000, margin: '0 auto', padding: 24 }}>
+            <Title level={2}>Hồ sơ của tôi</Title>
+            <Row gutter={24}>
+                <Col xs={24} md={12}>
+                    <Card title="Thông tin cá nhân" loading={loading}>
+                        <Form layout="vertical" form={form} onFinish={onSave}>
                             <Form.Item name="fullName" label="Họ tên">
-                              <Input />
-                            </Form.Item>
-                            <Form.Item name="email" label="Email">
-                              <Input disabled />
+                                <Input />
                             </Form.Item>
                             <Form.Item name="phone" label="Số điện thoại">
-                              <Input />
+                                <Input />
                             </Form.Item>
                             <Form.Item name="avatar" label="Avatar URL">
-                              <Input />
+                                <Input />
                             </Form.Item>
                             <Form.Item>
-                              <Button type="primary" htmlType="submit">Lưu</Button>
+                                <Button type="primary" htmlType="submit">Lưu</Button>
                             </Form.Item>
-                          </Form>
-                        </Card>
-                      </Col>
-                      <Col xs={24} md={12}>
-                        <Card
-                            title="Địa chỉ giao hàng & thanh toán"
-                            loading={loading}
-                            extra={
-                              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateAddress}>
-                                Thêm địa chỉ
-                              </Button>
-                            }
-                        >
-                          <List
-                              dataSource={addresses}
-                              locale={{ emptyText: 'Chưa có địa chỉ' }}
-                              renderItem={(addr) => {
-                                // --- PHẦN SỬA LOGIC HIỂN THỊ NÚT ĐỂ TRÁNH VỠ GIAO DIỆN ---
-                                const actions = [];
+                        </Form>
+                    </Card>
+                </Col>
 
-                                // Chỉ hiện nút set mặc định nếu chưa phải mặc định
-                                if (!addr.defaultShipping) {
-                                  actions.push(
-                                      <Button
-                                          key="ship"
-                                          type="link"
-                                          size="small"
-                                          onClick={() => handleSetDefault(addr, 'shipping')}
-                                      >
-                                        Đặt ship mặc định
-                                      </Button>
-                                  );
-                                }
-
-                                if (!addr.defaultBilling) {
-                                  actions.push(
-                                      <Button
-                                          key="bill"
-                                          type="link"
-                                          size="small"
-                                          onClick={() => handleSetDefault(addr, 'billing')}
-                                      >
-                                        Đặt thanh toán
-                                      </Button>
-                                  );
-                                }
-
-                                // Nút Sửa và Xóa
-                                actions.push(
-                                    <Tooltip title="Chỉnh sửa" key="edit">
-                                      <Button type="text" icon={<EditOutlined />} onClick={() => openEditAddress(addr)} />
-                                    </Tooltip>
-                                );
-                                actions.push(
-                                    <Tooltip title="Xóa" key="delete">
-                                      <Button danger type="text" icon={<DeleteOutlined />} onClick={() => handleDeleteAddress(addr.id)} />
-                                    </Tooltip>
-                                );
-
-                                return (
-                                    <List.Item actions={actions}>
-                                      <List.Item.Meta
-                                          title={
-                                            <Space>
-                                              <span style={{ fontWeight: 600 }}>{addr.name} - {addr.phone}</span>
-                                              {addr.defaultShipping && <Tag icon={<HomeOutlined />} color="green">Ship mặc định</Tag>}
-                                              {addr.defaultBilling && <Tag icon={<ShoppingOutlined />} color="blue">Thanh toán</Tag>}
-                                            </Space>
-                                          }
-                                          description={
-                                            <div style={{ marginTop: 4 }}>
-                                              <div>{addr.addressLine}</div>
-                                              <div>{addr.district}, {addr.city}, {addr.province}</div>
-                                              {addr.postalCode && <div>Mã bưu chính: {addr.postalCode}</div>}
-                                            </div>
-                                          }
-                                      />
-                                    </List.Item>
-                                );
-                              }}
-                          />
-                        </Card>
-                      </Col>
-                    </Row>
-                ),
-              },
-              {
-                key: 'activity',
-                label: 'Lịch sử hoạt động',
-                children: (
-                    <Row gutter={24}>
-                      <Col xs={24} md={12}>
-                        <Card title="Đơn hàng gần đây" loading={loading}>
-                          <List
-                              dataSource={activity.orders || []}
-                              locale={{ emptyText: 'Chưa có đơn hàng' }}
-                              renderItem={(order) => (
-                                  <List.Item
-                                      style={{ cursor: 'pointer' }}
-                                      onClick={() => handleOrderClick(order.id)}
-                                  >
+                <Col xs={24} md={12}>
+                    <Card title="Địa chỉ" loading={loading}>
+                        <List
+                            dataSource={addresses}
+                            renderItem={(addr) => (
+                                <List.Item>
                                     <List.Item.Meta
-                                        title={
-                                          <Space>
-                                            <HistoryOutlined />
-                                            <span>ĐH #{order.id}</span>
-                                            <Tag color="purple">{order.status}</Tag>
-                                          </Space>
-                                        }
-                                        description={
-                                          <div>
-                                            <div>Tổng: {(order.totalAmount || 0).toLocaleString('vi-VN')} ₫</div>
-                                            <div>Ngày tạo: {order.createdAt}</div>
-                                          </div>
-                                        }
+                                        title={`${addr.name} - ${addr.phone}`}
+                                        description={`${addr.addressLine}, ${addr.district}, ${addr.city}, ${addr.province}`}
                                     />
-                                  </List.Item>
-                              )}
-                          />
-                        </Card>
-                      </Col>
-                      <Col xs={24} md={12}>
-                        <Card title="Đánh giá của bạn" loading={loading}>
-                          <List
-                              dataSource={activity.reviews || []}
-                              locale={{ emptyText: 'Chưa có đánh giá' }}
-                              renderItem={(review) => (
-                                  <List.Item>
-                                    <List.Item.Meta
-                                        title={
-                                          <Space>
-                                            <StarOutlined style={{ color: '#faad14' }} />
-                                            <span>{review.productName}</span>
-                                            <Tag color="gold">{review.rating}★</Tag>
-                                          </Space>
-                                        }
-                                        description={
-                                          <>
-                                            <div>{review.body}</div>
-                                            <div>Trạng thái: <Tag>{review.status}</Tag></div>
-                                          </>
-                                        }
-                                    />
-                                  </List.Item>
-                              )}
-                          />
-                        </Card>
-                      </Col>
-                    </Row>
-                ),
-              },
-            ]}
-        />
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span>Mặc định</span>
+                                        <Switch checked={addr.isDefault} disabled />
+                                    </div>
+                                </List.Item>
+                            )}
+                        />
+                    </Card>
+                </Col>
+            </Row>
 
-        <Divider />
-
-        <Space style={{ marginTop: 24, width: '100%', justifyContent: 'center' }}>
-          <Button
-              type="default"
-              icon={<LogoutOutlined />}
-              onClick={handleLogout}
-              size="large"
-          >
-            Đăng xuất
-          </Button>
-        </Space>
-
-        <Modal
-            title={editingAddress ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ'}
-            open={addressModalOpen}
-            onCancel={() => {
-              setAddressModalOpen(false);
-              setEditingAddress(null);
-            }}
-            onOk={submitAddress}
-            okText="Lưu"
-        >
-          <Form layout="vertical" form={addressForm}>
-            <Form.Item name="name" label="Người nhận" rules={[{ required: true, message: 'Nhập tên người nhận' }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item name="phone" label="Điện thoại" rules={[{ required: true, message: 'Nhập số điện thoại' }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item name="addressLine" label="Địa chỉ" rules={[{ required: true, message: 'Nhập địa chỉ' }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item name="district" label="Quận/Huyện">
-              <Input />
-            </Form.Item>
-            <Form.Item name="city" label="Thành phố/Tỉnh">
-              <Input />
-            </Form.Item>
-            <Form.Item name="province" label="Quốc gia/Tỉnh khác">
-              <Input />
-            </Form.Item>
-            <Form.Item name="postalCode" label="Mã bưu chính">
-              <Input />
-            </Form.Item>
-            <Form.Item name="defaultShipping" label="Đặt làm địa chỉ giao hàng mặc định" valuePropName="checked">
-              <Switch />
-            </Form.Item>
-            <Form.Item name="defaultBilling" label="Đặt làm địa chỉ thanh toán mặc định" valuePropName="checked">
-              <Switch />
-            </Form.Item>
-          </Form>
-        </Modal>
-      </div>
-  );
+            {/* NÚT ĐĂNG XUẤT */}
+            <Space style={{ marginTop: 24, width: '100%', justifyContent: 'center' }}>
+                <Button
+                    type="danger"
+                    icon={<LogoutOutlined />}
+                    onClick={handleLogout}
+                    size="large"
+                >
+                    Đăng xuất
+                </Button>
+            </Space>
+        </div>
+    );
 };
 
 export default ProfilePage;
