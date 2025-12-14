@@ -44,7 +44,7 @@ public class OrderDTO {
                 var product = item.getVariant().getProduct();
                 dto.setProductId(product.getId());
                 dto.setProductName(product.getName()); // SỬA LỖI: getProductName() -> getName()
-                
+
                 // SỬA LỖI: Lấy ảnh mặc định thay vì truy cập Set bằng index
                 dto.setImageUrl(product.getDefaultImage());
             }

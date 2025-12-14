@@ -1,8 +1,8 @@
 // src/user/pages/CategoryListPage.js
 import React, { useEffect, useState } from 'react';
-import { List, Card, Spin, message } from 'antd';
+import { List, Card, Spin, message, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import CategoryService from '../../services/user/CategoryService'; // ← Tạo sau
+import CategoryService from '../../services/user/CategoryService';
 
 const CategoryListPage = () => {
     const [categories, setCategories] = useState([]);
@@ -36,12 +36,12 @@ const CategoryListPage = () => {
                     dataSource={categories}
                     renderItem={cat => (
                         <List.Item>
-                            <a
+                            <Typography.Link
                                 onClick={() => navigate(`/user/categories/${cat.slug}`)}
                                 style={{ fontSize: 16 }}
                             >
                                 {cat.name} {cat.productCount > 0 && `(${cat.productCount} sản phẩm)`}
-                            </a>
+                            </Typography.Link>
                         </List.Item>
                     )}
                 />

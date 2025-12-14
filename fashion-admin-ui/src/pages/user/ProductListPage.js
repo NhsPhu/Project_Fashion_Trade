@@ -1,174 +1,185 @@
-// src/pages/user/ProductListPage.js
-import React, { useEffect, useState, useCallback } from 'react';
-import { Card, Row, Col, Input, Select, Pagination, Space, Typography, Spin } from 'antd';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { SearchOutlined } from '@ant-design/icons';
+// src/pages/user/ProductDetailPage.js
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
+import {
+  Card, Row, Col, Image, Typography, Space, Select,
+  InputNumber, Button, message, Alert, Spin, Tag, Input
+} from 'antd';
 import ProductCatalogService from '../../services/user/ProductCatalogService';
-import './ProductListPage.css';
+import WishlistService from '../../services/user/WishlistService';
+import { useUserCart } from '../../contexts/UserCartContext';
+import { useAuth } from '../../contexts/AuthContext';
 
-const { Search } = Input;
+const { Title, Text } = Typography;
 const { Option } = Select;
-const { Title } = Typography;
+const { Search } = Input;
 
-const ProductListPage = () => {
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts] = useState([]);
+const ProductDetailPage = () => {
+  const { id } = useParams();
+  const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(parseInt(searchParams.get('page')) || 0);
-  const [size] = useState(12);
-  const [filters, setFilters] = useState({
-    search: searchParams.get('search') || '',
-    sort: searchParams.get('sort') || 'newest',
-    categoryId: searchParams.get('categoryId') || null,
-    brandId: searchParams.get('brandId') || null,
-    minPrice: searchParams.get('minPrice') || null,
-    maxPrice: searchParams.get('maxPrice') || null,
-  });
+  const [error, setError] = useState(null);
+  const [selectedVariantId, setSelectedVariantId] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [couponCode, setCouponCode] = useState('');
+  const [discountedPrice, setDiscountedPrice] = useState(null);
+  const { addItem } = useUserCart();
+  const { isAuthenticated } = useAuth();
 
-  // ĐÃ SỬA: Bọc loadProducts bằng useCallback
-  const loadProducts = useCallback(async () => {
+  const fetchProduct = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, size, ...filters };
-      Object.keys(params).forEach(key => params[key] === null && delete params[key]);
-      const response = await ProductCatalogService.getProducts(params);
-      setProducts(response.content || []);
-      setTotal(response.totalElements || 0);
-    } catch (error) {
-      console.error('Error loading products:', error);
-      setProducts([]);
-      setTotal(0);
+      const data = await ProductCatalogService.getProductById(id);
+      setProduct(data);
+      if (data.variants && data.variants.length > 0) {
+        setSelectedVariantId(data.variants[0].id);
+      }
+    } catch (err) {
+      setError('Không thể tải thông tin sản phẩm');
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [page, filters, size]); // Dependency: page, filters, size
+  }, [id]);
 
-  // ĐÃ SỬA: Chỉ cần loadProducts trong dependency
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    fetchProduct();
+  }, [fetchProduct]);
 
-  const handleSearch = (value) => {
-    setFilters({ ...filters, search: value });
-    setPage(0);
-    updateSearchParams({ ...filters, search: value, page: 0 });
+  useEffect(() => {
+    if (couponCode && selectedVariantId) {
+      ProductCatalogService.previewDiscount(selectedVariantId, couponCode)
+          .then(setDiscountedPrice)
+          .catch(() => setDiscountedPrice(null));
+    } else {
+      setDiscountedPrice(null);
+    }
+  }, [couponCode, selectedVariantId]);
+
+  const selectedVariant = useMemo(() => {
+    return product?.variants?.find(v => v.id === selectedVariantId);
+  }, [product, selectedVariantId]);
+
+  const handleAddToCart = async () => {
+    if (!selectedVariant) {
+      message.error('Vui lòng chọn biến thể');
+      return;
+    }
+    try {
+      await addItem(null, { variantId: selectedVariant.id, quantity });
+      message.success('Đã thêm vào giỏ hàng');
+    } catch (err) {
+      message.error('Lỗi khi thêm vào giỏ hàng');
+    }
   };
 
-  const handleSortChange = (value) => {
-    setFilters({ ...filters, sort: value });
-    setPage(0);
-    updateSearchParams({ ...filters, sort: value, page: 0 });
+  const handleFavorite = async () => {
+    try {
+      await WishlistService.addToWishlist(product.id);
+      message.success('Đã thêm vào yêu thích');
+    } catch (err) {
+      message.error('Lỗi khi thêm vào yêu thích');
+    }
   };
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage - 1);
-    updateSearchParams({ ...filters, page: newPage - 1 });
-  };
+  const images = useMemo(() => product?.images || [], [product]);
 
-  const updateSearchParams = (newFilters) => {
-    const params = new URLSearchParams();
-    Object.entries(newFilters).forEach(([key, value]) => {
-      if (value) params.set(key, value);
-    });
-    setSearchParams(params);
-  };
+  if (loading) return <Spin size="large" />;
+  if (error) return <Alert message={error} type="error" />;
+  if (!product) return <Alert message="Sản phẩm không tồn tại" type="warning" />;
+
+  const currentPrice = discountedPrice || selectedVariant?.salePrice || selectedVariant?.price;
 
   return (
-      <div className="product-list-page">
-        <div className="product-list-header">
-          <Title level={2}>Danh sách sản phẩm</Title>
-          <Space>
-            <Search
-                placeholder="Tìm kiếm sản phẩm..."
-                allowClear
-                enterButton={<SearchOutlined />}
-                size="large"
-                style={{ width: 300 }}
-                onSearch={handleSearch}
-                defaultValue={filters.search}
-            />
-            <Select
-                defaultValue={filters.sort}
-                style={{ width: 200 }}
-                onChange={handleSortChange}
-            >
-              <Option value="newest">Mới nhất</Option>
-              <Option value="name_asc">Tên A-Z</Option>
-              <Option value="name_desc">Tên Z-A</Option>
-            </Select>
-          </Space>
-        </div>
-
-        <Spin spinning={loading}>
-          {products.length === 0 && !loading ? (
-              <div style={{ textAlign: 'center', padding: 48 }}>
-                <p style={{ fontSize: 18, color: '#999' }}>Không tìm thấy sản phẩm nào</p>
-              </div>
-          ) : (
-              <Row gutter={[16, 16]}>
-                {products.map((product) => (
-                    <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
-                      <Card
-                          hoverable
-                          cover={
-                            <img
-                                alt={product.name}
-                                src={product.defaultImage || '/placeholder.jpg'}
-                                style={{ height: 250, objectFit: 'cover' }}
-                                onError={(e) => {
-                                  e.target.src = 'https://via.placeholder.com/250x250?text=No+Image';
-                                }}
-                            />
-                          }
-                          onClick={() => navigate(`/products/${product.id}`)}
-                      >
-                        <Card.Meta
-                            title={product.name}
-                            description={
-                              <Space direction="vertical" size="small">
-                        <span>
-                          {product.minSalePrice && product.minSalePrice > 0 && product.minSalePrice !== product.minPrice ? (
-                              <>
-                              <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
-                                {product.minSalePrice.toLocaleString('vi-VN')} ₫
-                              </span>
-                                <span style={{ textDecoration: 'line-through', marginLeft: 8, color: '#999' }}>
-                                {product.minPrice?.toLocaleString('vi-VN') || '0'} ₫
-                              </span>
-                              </>
-                          ) : (
-                              <span style={{ fontWeight: 'bold' }}>
-                              {product.minPrice?.toLocaleString('vi-VN') || '0'} ₫
-                            </span>
-                          )}
-                        </span>
-                                {product.averageRating && product.averageRating > 0 && (
-                                    <span>⭐ {product.averageRating.toFixed(1)} ({product.reviewCount || 0})</span>
-                                )}
-                              </Space>
-                            }
-                        />
-                      </Card>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
+        <Row gutter={32}>
+          <Col span={12}>
+            <Image.PreviewGroup>
+              <Image
+                  src={images[0]?.url || product.defaultImage}
+                  alt={product.name}
+                  style={{ width: '100%', marginBottom: 16 }}
+              />
+              <Row gutter={8}>
+                {images.slice(1).map(img => (
+                    <Col span={6} key={img.id}>
+                      <Image src={img.url} alt={img.altText} />
                     </Col>
                 ))}
               </Row>
-          )}
-
-          {total > 0 && (
-              <div style={{ textAlign: 'center', marginTop: 32 }}>
-                <Pagination
-                    current={page + 1}
-                    total={total}
-                    pageSize={size}
-                    onChange={handlePageChange}
+            </Image.PreviewGroup>
+          </Col>
+          <Col span={12}>
+            <Card>
+              <Title level={2}>{product.name}</Title>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Search
+                    placeholder="Nhập mã giảm giá"
+                    onSearch={(value) => setCouponCode(value)}
+                    allowClear
+                    enterButton="Áp dụng"
                 />
-              </div>
-          )}
-        </Spin>
+                <div>
+                  {discountedPrice ? (
+                      <>
+                        <del>{selectedVariant.price.toLocaleString()} ₫</del>
+                        <Title level={3} style={{ color: 'red' }}>{discountedPrice.toLocaleString()} ₫</Title>
+                        <Tag color="red">Đã áp mã {couponCode}</Tag>
+                      </>
+                  ) : selectedVariant?.salePrice ? (
+                      <>
+                        <del>{selectedVariant.price.toLocaleString()} ₫</del>
+                        <Title level={3} style={{ color: 'red' }}>{selectedVariant.salePrice.toLocaleString()} ₫</Title>
+                      </>
+                  ) : (
+                      <Title level={3}>{selectedVariant?.price.toLocaleString()} ₫</Title>
+                  )}
+                  {product.averageRating > 0 && (
+                      <Tag color="gold">⭐ {product.averageRating.toFixed(1)} ({product.reviewCount})</Tag>
+                  )}
+                </div>
+                <Text>{product.description}</Text>
+                <Select
+                    style={{ width: '100%' }}
+                    value={selectedVariantId}
+                    onChange={setSelectedVariantId}
+                >
+                  {product.variants.map(v => (
+                      <Option key={v.id} value={v.id}>
+                        {v.attributes} - {v.stockQuantity > 0 ? 'Còn hàng' : 'Hết hàng'}
+                      </Option>
+                  ))}
+                </Select>
+                <InputNumber
+                    min={1}
+                    max={selectedVariant?.stockQuantity || 0}
+                    value={quantity}
+                    onChange={setQuantity}
+                />
+                <Text type="secondary">
+                  (Còn {selectedVariant?.stockQuantity ?? 0})
+                </Text>
+                <Space size="middle">
+                  <Button
+                      type="primary"
+                      size="large"
+                      onClick={handleAddToCart}
+                      disabled={!selectedVariant || selectedVariant.stockQuantity === 0}
+                  >
+                    Thêm vào giỏ
+                  </Button>
+                  {isAuthenticated && (
+                      <Button size="large" onClick={handleFavorite}>
+                        Yêu thích
+                      </Button>
+                  )}
+                </Space>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
       </div>
   );
 };
 
-export default ProductListPage;
+export default ProductDetailPage;

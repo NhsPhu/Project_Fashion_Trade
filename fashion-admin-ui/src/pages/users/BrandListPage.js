@@ -1,8 +1,8 @@
 // src/user/pages/BrandListPage.js
 import React, { useEffect, useState } from 'react';
-import { List, Card, Spin, message } from 'antd';
+import { List, Card, Spin, message, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import BrandService from '../../services/user/BrandService'; // ← Tạo sau
+import BrandService from '../../services/user/BrandService';
 
 const BrandListPage = () => {
     const [brands, setBrands] = useState([]);
@@ -36,12 +36,12 @@ const BrandListPage = () => {
                     dataSource={brands}
                     renderItem={brand => (
                         <List.Item>
-                            <a
+                            <Typography.Link
                                 onClick={() => navigate(`/user/brands/${brand.slug}`)}
                                 style={{ fontSize: 16 }}
                             >
                                 {brand.name}
-                            </a>
+                            </Typography.Link>
                         </List.Item>
                     )}
                 />

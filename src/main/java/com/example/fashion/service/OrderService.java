@@ -37,7 +37,7 @@ public class OrderService {
         if (userId == null) {
             throw new RuntimeException("User not authenticated");
         }
-        
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -139,14 +139,14 @@ public class OrderService {
 
     private OrderDTO convertToDto(Order order) {
         String fullAddress = Stream.of(
-                order.getShippingAddressLine(),
-                order.getShippingDistrict(),
-                order.getShippingCity(),
-                order.getShippingProvince()
-        )
-        .filter(Objects::nonNull)
-        .filter(s -> !s.isEmpty())
-        .collect(Collectors.joining(", "));
+                        order.getShippingAddressLine(),
+                        order.getShippingDistrict(),
+                        order.getShippingCity(),
+                        order.getShippingProvince()
+                )
+                .filter(Objects::nonNull)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining(", "));
 
         OrderDTO.AddressDTO addressDTO = new OrderDTO.AddressDTO(fullAddress);
 

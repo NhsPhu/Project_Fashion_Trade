@@ -10,10 +10,13 @@ import ProductCatalogService from '../../services/user/ProductCatalogService';
 import WishlistService from '../../services/user/WishlistService';
 import { useUserCart } from '../../contexts/UserCartContext';
 import { useUserAuth } from '../../contexts/UserAuthContext';
+import InventoryService from '../../services/admin/InventoryService'; // THÊM: Để lấy tồn kho từ inventory
 
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
+
+const WAREHOUSE_ID = 1; // Kho Hà Nội (theo DB)
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -32,6 +35,9 @@ const ProductDetailPage = () => {
 
   const [newReview, setNewReview] = useState({ rating: 0, content: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  // THÊM: Lưu tồn kho thật từ inventory
+  const [variantStock, setVariantStock] = useState({}); // { variantId: quantity }
 
   // Xử lý ảnh
   const IMAGE_BASE_URL = '/product_image/img/';
@@ -64,6 +70,26 @@ const ProductDetailPage = () => {
     };
     load();
   }, [id]);
+
+  // THÊM: Load tồn kho thật từ inventory cho tất cả variant
+  useEffect(() => {
+    if (!product?.variants || product.variants.length === 0) return;
+
+    const loadInventoryStock = async () => {
+      const stockMap = {};
+      for (const variant of product.variants) {
+        try {
+          const res = await InventoryService.getStock(variant.id, WAREHOUSE_ID);
+          stockMap[variant.id] = res.quantity || 0;
+        } catch (err) {
+          console.error('Lỗi lấy tồn kho:', err);
+          stockMap[variant.id] = 0;
+        }
+      }
+      setVariantStock(stockMap);
+    };
+    loadInventoryStock();
+  }, [product]);
 
   // Kiểm tra wishlist
   useEffect(() => {
@@ -195,7 +221,6 @@ const ProductDetailPage = () => {
               ))}
             </Space>
           </Col>
-
           {/* Thông tin */}
           <Col xs={24} md={12}>
             <Title level={2} style={{ marginBottom: 12 }}>{product.name}</Title>
@@ -204,23 +229,19 @@ const ProductDetailPage = () => {
               {product.brandName && <Tag color="green">{product.brandName}</Tag>}
             </Space>
             <Divider style={{ margin: '16px 0' }} />
-
-            {/* SKU & Tồn kho */}
+            {/* SKU & Tồn kho - SỬA: DÙNG TỒN KHO THẬT TỪ INVENTORY */}
             <Space direction="vertical" size={10} style={{ width: '100%' }}>
               <div>
                 <Text strong>SKU: </Text>
                 <Text type="secondary">{selectedVariant?.sku || 'N/A'}</Text>
               </div>
-              {selectedVariant?.stockQuantity !== undefined && (
-                  <div>
-                    <Text strong>Tồn kho: </Text>
-                    <Tag color={selectedVariant.stockQuantity > 0 ? 'green' : 'red'}>
-                      {selectedVariant.stockQuantity > 0 ? `${selectedVariant.stockQuantity} sản phẩm` : 'Hết hàng'}
-                    </Tag>
-                  </div>
-              )}
+              <div>
+                <Text strong>Tồn kho: </Text>
+                <Tag color={variantStock[selectedVariantId] > 0 ? 'green' : 'red'}>
+                  {variantStock[selectedVariantId] > 0 ? `${variantStock[selectedVariantId]} sản phẩm` : 'Hết hàng'}
+                </Tag>
+              </div>
             </Space>
-
             {/* GIÁ SALE SIÊU ĐẸP */}
             <div style={{ margin: '30px 0 20px 0' }}>
               <Text strong style={{ fontSize: 18 }}>Giá:</Text>
@@ -244,7 +265,6 @@ const ProductDetailPage = () => {
                 )}
               </div>
             </div>
-
             {/* Biến thể */}
             <div style={{ marginBottom: 20 }}>
               <Text strong>Biến thể:</Text>
@@ -255,24 +275,22 @@ const ProductDetailPage = () => {
               >
                 {(product.variants || []).map(v => (
                     <Option key={v.id} value={v.id}>
-                      {v.sku} - {v.attributes || 'Mặc định'} (Còn {v.stockQuantity})
+                      {v.sku} - {v.attributes || 'Mặc định'} (Còn {variantStock[v.id] ?? 0})
                     </Option>
                 ))}
               </Select>
             </div>
-
             {/* Số lượng */}
             <div style={{ marginBottom: 30 }}>
               <Text strong>Số lượng:</Text>
               <InputNumber
                   min={1}
-                  max={selectedVariant?.stockQuantity || 99}
+                  max={variantStock[selectedVariantId] ?? 99} // SỬA: Dùng tồn kho thật từ inventory
                   value={quantity}
                   onChange={setQuantity}
                   style={{ marginLeft: 12, width: 120 }}
               />
             </div>
-
             {/* Nút hành động */}
             <Space size={16}>
               <Button
@@ -284,7 +302,6 @@ const ProductDetailPage = () => {
               >
                 Thêm vào giỏ hàng
               </Button>
-
               {/* CHỈ HIỆN NÚT YÊU THÍCH KHI ĐÃ ĐĂNG NHẬP */}
               {isAuthenticated && (
                   <Button

@@ -1,4 +1,3 @@
-// src/main/java/com/example/fashion/controller/AdminCouponController.java
 package com.example.fashion.controller;
 
 import com.example.fashion.dto.CouponRequestDTO;
@@ -15,7 +14,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/admin/coupons")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyAuthority('SUPER_ADMIN', 'ADMIN')")
+// === SỬA TẠI ĐÂY: Chỉ dùng ROLE_ prefix ===
+@PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN', 'ROLE_ADMIN')")
 public class AdminCouponController {
 
     private final CouponService couponService;
