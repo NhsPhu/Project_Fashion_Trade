@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 // --- THÊM CÁC IMPORT NÀY ĐỂ SỬA LỖI CORS ---
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -48,7 +49,7 @@ public class SecurityConfig {
     }
 
     /**
-     * --- [SỬA LỖI 1] CẤU HÌNH CORS ---
+     * --- CẤU HÌNH CORS ---
      * Cho phép React (localhost:3000) gọi API mà không bị chặn
      */
     @Bean
@@ -87,35 +88,42 @@ public class SecurityConfig {
 
                         // 4. User actions (Giỏ hàng)
                         .requestMatchers("/api/v1/user/cart/**", "/api/v1/cart/**").permitAll()
+                        .requestMatchers("/api/v1/orders/**").authenticated() // CHO PHÉP USER XEM ĐƠN HÀNG
                         .requestMatchers("/api/v1/user/wishlist/**", "/api/v1/user/reviews/**").authenticated()
-
-                        // --- [SỬA LỖI 2] THÊM ROLE_SUPER_ADMIN VÀO TẤT CẢ CÁC MỤC ---
 
                         // Dashboard
                         .requestMatchers("/api/v1/admin/dashboard/stats")
                         .hasAnyAuthority("PRODUCT_MANAGER", "ORDER_MANAGER", "SUPER_ADMIN", "ROLE_SUPER_ADMIN", "ADMIN", "ROLE_ADMIN")
 
-                        // Users (Nguyên nhân chính gây lỗi 403 của bạn)
+                        // Users
                         .requestMatchers("/api/v1/admin/users/**")
                         .hasAnyAuthority("SUPER_ADMIN", "ROLE_SUPER_ADMIN", "ADMIN", "ROLE_ADMIN")
 
-                        // Các mục khác
+                        // Products, Categories, Brands
                         .requestMatchers("/api/v1/admin/products/**", "/api/v1/admin/categories/**", "/api/v1/admin/brands/**")
                         .hasAnyAuthority("PRODUCT_MANAGER", "SUPER_ADMIN", "ROLE_SUPER_ADMIN", "ADMIN", "ROLE_ADMIN")
 
+                        // Orders
                         .requestMatchers("/api/v1/admin/orders/**")
                         .hasAnyAuthority("ORDER_MANAGER", "SUPER_ADMIN", "ROLE_SUPER_ADMIN", "ADMIN", "ROLE_ADMIN")
 
+                        // Reports
                         .requestMatchers("/api/v1/admin/reports/**")
                         .hasAnyAuthority("SUPER_ADMIN", "ROLE_SUPER_ADMIN", "PRODUCT_MANAGER", "ORDER_MANAGER", "ADMIN", "ROLE_ADMIN")
 
+                        // Inventory
                         .requestMatchers("/api/v1/admin/inventory/**")
                         .hasAnyAuthority("SUPER_ADMIN", "ROLE_SUPER_ADMIN", "PRODUCT_MANAGER", "ADMIN", "ROLE_ADMIN")
 
+                        // CMS & Banners
                         .requestMatchers("/api/v1/admin/cms/**", "/api/v1/admin/banners/**")
                         .hasAnyAuthority("SUPER_ADMIN", "ROLE_SUPER_ADMIN", "MARKETING", "ADMIN", "ROLE_ADMIN")
 
-                        // Quyền chung
+                        // === THÊM DÒNG NÀY ĐỂ SỬA LỖI 403 CHO COUPONS ===
+                        .requestMatchers("/api/v1/admin/coupons/**")
+                        .hasAnyAuthority("SUPER_ADMIN", "ROLE_SUPER_ADMIN", "ADMIN", "ROLE_ADMIN")
+
+                        // Quyền chung cho các endpoint admin khác (nếu có thêm sau này)
                         .requestMatchers("/api/v1/admin/**")
                         .hasAnyAuthority("SUPER_ADMIN", "ROLE_SUPER_ADMIN", "PRODUCT_MANAGER", "ORDER_MANAGER", "MARKETING", "ADMIN", "ROLE_ADMIN")
 

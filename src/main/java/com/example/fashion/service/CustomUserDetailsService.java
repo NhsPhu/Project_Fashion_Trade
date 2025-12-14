@@ -10,34 +10,39 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    // 1. Xóa @Autowired ở đây và làm cho nó 'final'
     private final UserRepository userRepository;
 
-    // 2. Tạo hàm khởi tạo (constructor) để Spring tự động "tiêm" (inject) UserRepository
     @Autowired
     public CustomUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository; // Cảnh báo "never assigned" sẽ biến mất
+        this.userRepository = userRepository;
     }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // Tìm user bằng email
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("Không tìm thấy người dùng với email: " + email));
 
-        // Chuyển đổi Set<Role> (Enum) thành Set<GrantedAuthority>
-        Set<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.name()))
-                .collect(Collectors.toSet());
+        // === SỬA CHỈ PHẦN NÀY: THÊM CẢ HAI DẠNG AUTHORITY ===
+        Set<GrantedAuthority> authorities = new HashSet<>();
 
-        // Trả về đối tượng UserDetails mà Spring Security hiểu
+        // Dạng không có prefix (match "ADMIN", "SUPER_ADMIN", ...)
+        user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.name()))
+                .forEach(authorities::add);
+
+        // Dạng có prefix (match "ROLE_ADMIN", "ROLE_SUPER_ADMIN", ...)
+        user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
+                .forEach(authorities::add);
+        // ====================================================
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPasswordHash(),

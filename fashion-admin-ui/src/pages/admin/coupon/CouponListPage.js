@@ -21,10 +21,13 @@ const CouponListPage = () => {
         setLoading(true);
         try {
             const data = await CouponService.getAll();
-            setCoupons(data);
-            setFiltered(data);
+            setCoupons(data || []);
+            setFiltered(data || []);
         } catch (error) {
-            notification.error({ message: 'Lỗi', description: 'Không thể tải danh sách mã giảm giá' });
+            notification.error({
+                message: 'Lỗi tải danh sách',
+                description: 'Không thể kết nối đến server'
+            });
         } finally {
             setLoading(false);
         }
@@ -33,8 +36,8 @@ const CouponListPage = () => {
     const handleSearch = (value) => {
         const lower = value.toLowerCase();
         const filteredData = coupons.filter(c =>
-            c.code.toLowerCase().includes(lower) ||
-            c.type.toLowerCase().includes(lower)
+            c.code?.toLowerCase().includes(lower) ||
+            c.type?.toLowerCase().includes(lower)
         );
         setFiltered(filteredData);
     };
@@ -42,10 +45,24 @@ const CouponListPage = () => {
     const handleDelete = async (id) => {
         try {
             await CouponService.delete(id);
-            notification.success({ message: 'Xóa mã giảm giá thành công!' });
-            fetchCoupons();
+            notification.success({
+                message: 'Thành công!',
+                description: 'Xóa mã giảm giá thành công'
+            });
+            fetchCoupons(); // Reload lại danh sách
         } catch (error) {
-            notification.error({ message: 'Xóa thất bại', description: error.message });
+            let desc = 'Có lỗi xảy ra khi xóa mã giảm giá';
+            if (error.response?.status === 403) {
+                desc = 'Bạn không có quyền xóa. Vui lòng kiểm tra role ADMIN trong database.';
+            } else if (error.response?.status === 400 || error.response?.status === 409) {
+                desc = error.response?.data?.message || 'Mã giảm giá đang được sử dụng, không thể xóa';
+            } else if (error.response?.status === 404) {
+                desc = 'Không tìm thấy mã giảm giá';
+            }
+            notification.error({
+                message: 'Xóa thất bại',
+                description: desc
+            });
         }
     };
 
@@ -70,26 +87,41 @@ const CouponListPage = () => {
         {
             title: 'Tổng đơn tối thiểu',
             dataIndex: 'minOrderValue',
-            render: (val) => val ? `₫${Number(val).toLocaleString('vi-VN')}` : 'Không',
+            render: (val) => val ? `₫${Number(val).toLocaleString('vi-VN')}` : 'Không giới hạn',
         },
         {
-            title: 'Hạn dùng',
+            title: 'Ngày bắt đầu',
+            dataIndex: 'startDate',
+            render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '-',
+        },
+        {
+            title: 'Ngày kết thúc',
             dataIndex: 'endDate',
-            render: (date) => new Date(date).toLocaleDateString('vi-VN'),
+            render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '-',
         },
         {
             title: 'Lượt dùng',
-            render: (_, record) => `${record.usedCount}/${record.usageLimit}`,
+            render: (_, record) => `${record.usedCount || 0}/${record.usageLimit}`,
         },
         {
             title: 'Trạng thái',
-            dataIndex: 'active',
-            key: 'active',
-            render: (active) => (
-                <Tag color={active ? 'green' : 'red'}>
-                    {active ? 'Hoạt động' : 'Hết hạn'}
-                </Tag>
-            ),
+            key: 'status',
+            render: (_, record) => {
+                const now = new Date();
+                const start = record.startDate ? new Date(record.startDate) : null;
+                const end = record.endDate ? new Date(record.endDate) : null;
+
+                const isInDateRange = start && end ? (now >= start && now <= end) : true;
+                const isWithinUsageLimit = (record.usedCount || 0) < record.usageLimit;
+
+                const isActive = isInDateRange && isWithinUsageLimit;
+
+                return (
+                    <Tag color={isActive ? 'green' : 'red'}>
+                        {isActive ? 'Hoạt động' : 'Hết hạn'}
+                    </Tag>
+                );
+            },
         },
         {
             title: 'Hành động',
@@ -103,10 +135,12 @@ const CouponListPage = () => {
                         onClick={() => navigate(`/admin/coupons/edit/${record.id}`)}
                     />
                     <Popconfirm
-                        title="Xóa mã này?"
+                        title="Xóa mã giảm giá?"
+                        description={`Bạn chắc chắn muốn xóa mã "${record.code}"? Hành động này không thể hoàn tác.`}
                         onConfirm={() => handleDelete(record.id)}
                         okText="Xóa"
                         cancelText="Hủy"
+                        okButtonProps={{ danger: true }}
                     >
                         <Button type="link" danger icon={<DeleteOutlined />} />
                     </Popconfirm>
@@ -116,10 +150,10 @@ const CouponListPage = () => {
     ];
 
     return (
-        <div>
+        <div style={{ padding: 24 }}>
             <Space direction="vertical" style={{ width: '100%' }} size="large">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2>Quản lý mã giảm giá</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                    <h2 style={{ margin: 0 }}>Quản lý mã giảm giá</h2>
                     <Space>
                         <Search
                             placeholder="Tìm mã hoặc loại..."
@@ -132,6 +166,7 @@ const CouponListPage = () => {
                         <Button
                             type="primary"
                             icon={<PlusOutlined />}
+                            size="large"
                             onClick={() => navigate('/admin/coupons/create')}
                         >
                             Tạo mã mới
@@ -144,7 +179,7 @@ const CouponListPage = () => {
                     dataSource={filtered}
                     rowKey="id"
                     loading={loading}
-                    pagination={{ pageSize: 10 }}
+                    pagination={{ pageSize: 10, showSizeChanger: true }}
                     locale={{ emptyText: 'Chưa có mã giảm giá nào' }}
                 />
             </Space>

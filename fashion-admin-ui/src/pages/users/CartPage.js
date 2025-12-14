@@ -1,12 +1,11 @@
-// src/user/pages/CartPage.js
-import React, { useState } from 'react';
+// src/pages/users/CartPage.js
+import React, { useState, useMemo } from 'react';
 import { Table, Button, Image, InputNumber, Space, Typography, message, Card, Input, Row, Col, Divider, Tag } from 'antd';
-import { useUserCart } from '../../contexts/UserCartContext';
+import { useUserCart } from '../../contexts/UserCartContext'; // điều chỉnh đường dẫn nếu cần
 import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
-// ĐƯỜNG DẪN ẢNH CHUẨN – GIỐNG HỆT ProductDetailPage & ProductListPage
 const IMAGE_BASE_URL = '/product_image/img/';
 
 const CartPage = () => {
@@ -15,7 +14,22 @@ const CartPage = () => {
     const [discountCode, setDiscountCode] = useState('');
     const [applyingDiscount, setApplyingDiscount] = useState(false);
 
-    // Hàm xử lý ảnh – giống hệt 2 trang kia
+    // === DI CHUYỂN useMemo LÊN ĐÂY, TRƯỚC MỌI RETURN SỚM ===
+    const dataSource = useMemo(() => {
+        if (!cart?.items || cart.items.length === 0) return [];
+
+        return [...cart.items]
+            .sort((a, b) => {
+                const idA = a.id ?? a.cartItemId ?? 0;
+                const idB = b.id ?? b.cartItemId ?? 0;
+                return idA - idB; // Thứ tự cố định theo ID → không nhảy lung tung
+            })
+            .map(item => ({
+                ...item,
+                key: item.id ?? item.cartItemId,
+            }));
+    }, [cart?.items]);
+
     const getImageUrl = (imageName) => {
         if (!imageName) return 'https://via.placeholder.com/80?text=No+Image';
         if (imageName.startsWith('http')) return imageName;
@@ -23,7 +37,7 @@ const CartPage = () => {
     };
 
     const handleCheckout = () => {
-        if (!cart?.items || cart.items.size === 0) {
+        if (!cart?.items || cart.items.length === 0) {
             message.warning('Giỏ hàng trống!');
             return;
         }
@@ -53,13 +67,14 @@ const CartPage = () => {
     };
 
     const columns = [
+        // ... giữ nguyên columns như cũ ...
         {
             title: 'Sản phẩm',
             key: 'product',
             render: (_, record) => (
                 <Space>
                     <Image
-                        src={getImageUrl(record.productImage)}   // ← ĐÚNG TRƯỜNG TỪ BACKEND
+                        src={getImageUrl(record.productImage)}
                         width={80}
                         height={80}
                         alt={record.productName}
@@ -97,7 +112,7 @@ const CartPage = () => {
                     min={1}
                     max={record.stockQuantity || 999}
                     value={q}
-                    onChange={(val) => handleUpdateQuantity(record.id, val)}
+                    onChange={(val) => handleUpdateQuantity(record.id ?? record.cartItemId, val)}
                     style={{ width: 80 }}
                 />
             ),
@@ -111,15 +126,15 @@ const CartPage = () => {
             title: 'Hành động',
             key: 'action',
             render: (_, record) => (
-                <Button danger size="small" onClick={() => removeItem(record.id)}>
+                <Button danger size="small" onClick={() => removeItem(record.id ?? record.cartItemId)}>
                     Xóa
                 </Button>
             ),
         },
     ];
 
-    // Giỏ hàng trống
-    if (!cart || cart.items?.size === 0) {
+    // === GIỎ HÀNG TRỐNG ===
+    if (!cart || dataSource.length === 0) {
         return (
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: 40, textAlign: 'center' }}>
                 <Title level={2}>Giỏ hàng</Title>
@@ -133,12 +148,7 @@ const CartPage = () => {
         );
     }
 
-    // Chuẩn hóa dữ liệu (giữ nguyên logic cũ của bạn)
-    const dataSource = Array.from(cart.items || []).map(item => ({
-        ...item,
-        key: item.id,
-    }));
-
+    // === GIỎ HÀNG CÓ SẢN PHẨM ===
     return (
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
             <Title level={2}>Giỏ hàng ({cart.totalItems || 0} sản phẩm)</Title>

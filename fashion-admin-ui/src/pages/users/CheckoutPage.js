@@ -16,12 +16,15 @@ import {
     Col,
 } from 'antd';
 import { useUserCart } from '../../contexts/UserCartContext';
+import { useUserAuth } from '../../contexts/UserAuthContext';
 import { useNavigate } from 'react-router-dom';
+import OrderService from '../../services/user/OrderService';
 
 const { Title, Text } = Typography;
 
 const CheckoutPage = () => {
     const { cart, clearCart } = useUserCart();
+    const { user } = useUserAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('cod');
@@ -42,16 +45,40 @@ const CheckoutPage = () => {
     }
 
     const onFinish = async (values) => {
+        if (!user) {
+            message.error("Bạn chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
+            return;
+        }
+
         setLoading(true);
         try {
-            // Giả lập gọi API đặt hàng
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            // Xây dựng payload
+            const payload = {
+                userId: user.id,
+                shippingName: values.fullName,
+                shippingPhone: values.phone,
+                shippingAddressLine: values.address,
+                paymentMethod: values.paymentMethod,
+                items: cart.items.map(item => ({
+                    variantId: item.variantId,
+                    quantity: item.quantity,
+                })),
+            };
+
+            // Gọi API
+            await OrderService.createOrder(payload);
 
             message.success('Đặt hàng thành công! Chúng tôi sẽ liên hệ với bạn sớm.');
             clearCart();
             navigate('/order-success');
         } catch (error) {
-            message.error('Đặt hàng thất bại. Vui lòng thử lại.');
+            let errorMessage = 'Đặt hàng thất bại. Vui lòng thử lại.';
+            if (error.response) {
+                errorMessage = error.response.data?.message || errorMessage;
+            } else if (error.request) {
+                errorMessage = "Không thể kết nối đến server.";
+            }
+            message.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -101,10 +128,17 @@ const CheckoutPage = () => {
             <Title level={2}>Thanh toán</Title>
 
             <Row gutter={24}>
-                {/* Cột trái: Form thông tin */}
                 <Col xs={24} lg={16}>
                     <Card title="Thông tin giao hàng" style={{ marginBottom: 24 }}>
-                        <Form layout="vertical" onFinish={onFinish} initialValues={{ paymentMethod: 'cod' }}>
+                        <Form
+                            layout="vertical"
+                            onFinish={onFinish}
+                            initialValues={{
+                                paymentMethod: 'cod',
+                                fullName: user?.fullName || '',
+                                phone: user?.phone || '',
+                            }}
+                        >
                             <Row gutter={16}>
                                 <Col span={12}>
                                     <Form.Item
@@ -176,7 +210,6 @@ const CheckoutPage = () => {
                     </Card>
                 </Col>
 
-                {/* Cột phải: Tóm tắt đơn hàng */}
                 <Col xs={24} lg={8}>
                     <Card title="Tóm tắt đơn hàng">
                         <Table

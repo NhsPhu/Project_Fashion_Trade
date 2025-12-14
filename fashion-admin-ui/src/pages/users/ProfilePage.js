@@ -48,7 +48,6 @@ const ProfilePage = () => {
   const { logout } = useUserAuth();
   const navigate = useNavigate();
 
-  // BỌC load TRONG useCallback
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -73,7 +72,6 @@ const ProfilePage = () => {
     }
   }, [form]);
 
-  // ĐÃ THÊM load VÀO DEPENDENCY
   useEffect(() => {
     load();
   }, [load]);
@@ -165,173 +163,195 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/user/login'); // ĐÚNG ĐƯỜNG DẪN
+    navigate('/user/login');
+  };
+
+  const handleOrderClick = (orderId) => {
+    // SỬA: Dùng đường dẫn tuyệt đối /orders/...
+    navigate(`/orders/${orderId}`);
   };
 
   return (
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: 24 }}>
         <Title level={2}>Hồ sơ của tôi</Title>
         <Tabs
-          defaultActiveKey="info"
-          items={[
-            {
-              key: 'info',
-              label: 'Thông tin cá nhân',
-              children: (
-                <Row gutter={24}>
-                  <Col xs={24} md={12}>
-                    <Card title="Thông tin cơ bản" loading={loading}>
-                      <Form layout="vertical" form={form} onFinish={onSave}>
-                        <Form.Item name="fullName" label="Họ tên">
-                          <Input />
-                        </Form.Item>
-                        <Form.Item name="email" label="Email">
-                          <Input disabled />
-                        </Form.Item>
-                        <Form.Item name="phone" label="Số điện thoại">
-                          <Input />
-                        </Form.Item>
-                        <Form.Item name="avatar" label="Avatar URL">
-                          <Input />
-                        </Form.Item>
-                        <Form.Item>
-                          <Button type="primary" htmlType="submit">Lưu</Button>
-                        </Form.Item>
-                      </Form>
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <Card
-                      title="Địa chỉ giao hàng & thanh toán"
-                      loading={loading}
-                      extra={
-                        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateAddress}>
-                          Thêm địa chỉ
-                        </Button>
-                      }
-                    >
-                      <List
-                        dataSource={addresses}
-                        locale={{ emptyText: 'Chưa có địa chỉ' }}
-                        renderItem={(addr) => (
-                          <List.Item
-                            actions={[
-                              <Tooltip title="Chỉnh sửa" key="edit">
-                                <Button size="small" icon={<EditOutlined />} onClick={() => openEditAddress(addr)} />
-                              </Tooltip>,
-                              <Tooltip title="Xóa" key="delete">
-                                <Button
-                                  danger
-                                  size="small"
-                                  icon={<DeleteOutlined />}
-                                  onClick={() => handleDeleteAddress(addr.id)}
-                                />
-                              </Tooltip>,
-                            ]}
-                          >
-                            <List.Item.Meta
-                              title={
-                                <Space>
-                                  <span>{addr.name} - {addr.phone}</span>
-                                  {addr.defaultShipping && <Tag icon={<HomeOutlined />} color="green">Ship mặc định</Tag>}
-                                  {addr.defaultBilling && <Tag icon={<ShoppingOutlined />} color="blue">Thanh toán</Tag>}
-                                </Space>
-                              }
-                              description={
-                                <>
-                                  <div>{addr.addressLine}</div>
-                                  <div>{addr.district}, {addr.city}, {addr.province}</div>
-                                  {addr.postalCode && <div>Mã bưu chính: {addr.postalCode}</div>}
-                                </>
-                              }
-                            />
-                            <Space direction="vertical">
-                              <Button
-                                size="small"
-                                type={addr.defaultShipping ? 'primary' : 'default'}
-                                onClick={() => handleSetDefault(addr, 'shipping')}
-                              >
-                                Đặt ship mặc định
+            defaultActiveKey="info"
+            items={[
+              {
+                key: 'info',
+                label: 'Thông tin cá nhân',
+                children: (
+                    <Row gutter={24}>
+                      <Col xs={24} md={12}>
+                        <Card title="Thông tin cơ bản" loading={loading}>
+                          <Form layout="vertical" form={form} onFinish={onSave}>
+                            <Form.Item name="fullName" label="Họ tên">
+                              <Input />
+                            </Form.Item>
+                            <Form.Item name="email" label="Email">
+                              <Input disabled />
+                            </Form.Item>
+                            <Form.Item name="phone" label="Số điện thoại">
+                              <Input />
+                            </Form.Item>
+                            <Form.Item name="avatar" label="Avatar URL">
+                              <Input />
+                            </Form.Item>
+                            <Form.Item>
+                              <Button type="primary" htmlType="submit">Lưu</Button>
+                            </Form.Item>
+                          </Form>
+                        </Card>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Card
+                            title="Địa chỉ giao hàng & thanh toán"
+                            loading={loading}
+                            extra={
+                              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateAddress}>
+                                Thêm địa chỉ
                               </Button>
-                              <Button
-                                size="small"
-                                type={addr.defaultBilling ? 'primary' : 'default'}
-                                onClick={() => handleSetDefault(addr, 'billing')}
-                              >
-                                Đặt thanh toán
-                              </Button>
-                            </Space>
-                          </List.Item>
-                        )}
-                      />
-                    </Card>
-                  </Col>
-                </Row>
-              ),
-            },
-            {
-              key: 'activity',
-              label: 'Lịch sử hoạt động',
-              children: (
-                <Row gutter={24}>
-                  <Col xs={24} md={12}>
-                    <Card title="Đơn hàng gần đây" loading={loading}>
-                      <List
-                        dataSource={activity.orders || []}
-                        locale={{ emptyText: 'Chưa có đơn hàng' }}
-                        renderItem={(order) => (
-                          <List.Item>
-                            <List.Item.Meta
-                              title={
-                                <Space>
-                                  <HistoryOutlined />
-                                  <span>ĐH #{order.id}</span>
-                                  <Tag color="purple">{order.status}</Tag>
-                                </Space>
-                              }
-                              description={
-                                <div>
-                                  <div>Tổng: {(order.totalAmount || 0).toLocaleString('vi-VN')} ₫</div>
-                                  <div>Ngày tạo: {order.createdAt}</div>
-                                </div>
-                              }
-                            />
-                          </List.Item>
-                        )}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} md={12}>
-                    <Card title="Đánh giá của bạn" loading={loading}>
-                      <List
-                        dataSource={activity.reviews || []}
-                        locale={{ emptyText: 'Chưa có đánh giá' }}
-                        renderItem={(review) => (
-                          <List.Item>
-                            <List.Item.Meta
-                              title={
-                                <Space>
-                                  <StarOutlined style={{ color: '#faad14' }} />
-                                  <span>{review.productName}</span>
-                                  <Tag color="gold">{review.rating}★</Tag>
-                                </Space>
-                              }
-                              description={
-                                <>
-                                  <div>{review.body}</div>
-                                  <div>Trạng thái: <Tag>{review.status}</Tag></div>
-                                </>
-                              }
-                            />
-                          </List.Item>
-                        )}
-                      />
-                    </Card>
-                  </Col>
-                </Row>
-              ),
-            },
-          ]}
+                            }
+                        >
+                          <List
+                              dataSource={addresses}
+                              locale={{ emptyText: 'Chưa có địa chỉ' }}
+                              renderItem={(addr) => {
+                                // --- PHẦN SỬA LOGIC HIỂN THỊ NÚT ĐỂ TRÁNH VỠ GIAO DIỆN ---
+                                const actions = [];
+
+                                // Chỉ hiện nút set mặc định nếu chưa phải mặc định
+                                if (!addr.defaultShipping) {
+                                  actions.push(
+                                      <Button
+                                          key="ship"
+                                          type="link"
+                                          size="small"
+                                          onClick={() => handleSetDefault(addr, 'shipping')}
+                                      >
+                                        Đặt ship mặc định
+                                      </Button>
+                                  );
+                                }
+
+                                if (!addr.defaultBilling) {
+                                  actions.push(
+                                      <Button
+                                          key="bill"
+                                          type="link"
+                                          size="small"
+                                          onClick={() => handleSetDefault(addr, 'billing')}
+                                      >
+                                        Đặt thanh toán
+                                      </Button>
+                                  );
+                                }
+
+                                // Nút Sửa và Xóa
+                                actions.push(
+                                    <Tooltip title="Chỉnh sửa" key="edit">
+                                      <Button type="text" icon={<EditOutlined />} onClick={() => openEditAddress(addr)} />
+                                    </Tooltip>
+                                );
+                                actions.push(
+                                    <Tooltip title="Xóa" key="delete">
+                                      <Button danger type="text" icon={<DeleteOutlined />} onClick={() => handleDeleteAddress(addr.id)} />
+                                    </Tooltip>
+                                );
+
+                                return (
+                                    <List.Item actions={actions}>
+                                      <List.Item.Meta
+                                          title={
+                                            <Space>
+                                              <span style={{ fontWeight: 600 }}>{addr.name} - {addr.phone}</span>
+                                              {addr.defaultShipping && <Tag icon={<HomeOutlined />} color="green">Ship mặc định</Tag>}
+                                              {addr.defaultBilling && <Tag icon={<ShoppingOutlined />} color="blue">Thanh toán</Tag>}
+                                            </Space>
+                                          }
+                                          description={
+                                            <div style={{ marginTop: 4 }}>
+                                              <div>{addr.addressLine}</div>
+                                              <div>{addr.district}, {addr.city}, {addr.province}</div>
+                                              {addr.postalCode && <div>Mã bưu chính: {addr.postalCode}</div>}
+                                            </div>
+                                          }
+                                      />
+                                    </List.Item>
+                                );
+                              }}
+                          />
+                        </Card>
+                      </Col>
+                    </Row>
+                ),
+              },
+              {
+                key: 'activity',
+                label: 'Lịch sử hoạt động',
+                children: (
+                    <Row gutter={24}>
+                      <Col xs={24} md={12}>
+                        <Card title="Đơn hàng gần đây" loading={loading}>
+                          <List
+                              dataSource={activity.orders || []}
+                              locale={{ emptyText: 'Chưa có đơn hàng' }}
+                              renderItem={(order) => (
+                                  <List.Item
+                                      style={{ cursor: 'pointer' }}
+                                      onClick={() => handleOrderClick(order.id)}
+                                  >
+                                    <List.Item.Meta
+                                        title={
+                                          <Space>
+                                            <HistoryOutlined />
+                                            <span>ĐH #{order.id}</span>
+                                            <Tag color="purple">{order.status}</Tag>
+                                          </Space>
+                                        }
+                                        description={
+                                          <div>
+                                            <div>Tổng: {(order.totalAmount || 0).toLocaleString('vi-VN')} ₫</div>
+                                            <div>Ngày tạo: {order.createdAt}</div>
+                                          </div>
+                                        }
+                                    />
+                                  </List.Item>
+                              )}
+                          />
+                        </Card>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Card title="Đánh giá của bạn" loading={loading}>
+                          <List
+                              dataSource={activity.reviews || []}
+                              locale={{ emptyText: 'Chưa có đánh giá' }}
+                              renderItem={(review) => (
+                                  <List.Item>
+                                    <List.Item.Meta
+                                        title={
+                                          <Space>
+                                            <StarOutlined style={{ color: '#faad14' }} />
+                                            <span>{review.productName}</span>
+                                            <Tag color="gold">{review.rating}★</Tag>
+                                          </Space>
+                                        }
+                                        description={
+                                          <>
+                                            <div>{review.body}</div>
+                                            <div>Trạng thái: <Tag>{review.status}</Tag></div>
+                                          </>
+                                        }
+                                    />
+                                  </List.Item>
+                              )}
+                          />
+                        </Card>
+                      </Col>
+                    </Row>
+                ),
+              },
+            ]}
         />
 
         <Divider />
@@ -348,14 +368,14 @@ const ProfilePage = () => {
         </Space>
 
         <Modal
-          title={editingAddress ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ'}
-          open={addressModalOpen}
-          onCancel={() => {
-            setAddressModalOpen(false);
-            setEditingAddress(null);
-          }}
-          onOk={submitAddress}
-          okText="Lưu"
+            title={editingAddress ? 'Chỉnh sửa địa chỉ' : 'Thêm địa chỉ'}
+            open={addressModalOpen}
+            onCancel={() => {
+              setAddressModalOpen(false);
+              setEditingAddress(null);
+            }}
+            onOk={submitAddress}
+            okText="Lưu"
         >
           <Form layout="vertical" form={addressForm}>
             <Form.Item name="name" label="Người nhận" rules={[{ required: true, message: 'Nhập tên người nhận' }]}>

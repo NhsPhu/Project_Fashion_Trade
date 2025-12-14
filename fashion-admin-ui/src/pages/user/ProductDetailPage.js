@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Card, Row, Col, Image, Typography, Space, Select,
-  InputNumber, Button, message, Alert, Spin, Tag
+  InputNumber, Button, message, Alert, Spin, Tag, Input
 } from 'antd';
 import ProductCatalogService from '../../services/user/ProductCatalogService';
 import WishlistService from '../../services/user/WishlistService';
@@ -12,145 +12,153 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { Search } = Input;
 
 const ProductDetailPage = () => {
-  const { id } = useParams(); // XÓA TYPE
+  const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [quantity, setQuantity] = useState(1);
+  const [couponCode, setCouponCode] = useState('');
+  const [discountedPrice, setDiscountedPrice] = useState(null);
   const { addItem } = useUserCart();
   const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    const loadProduct = async () => {
-      if (!id) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await ProductCatalogService.getProductById(id);
-        setProduct(data);
-        if (data?.variants?.length > 0) {
-          setSelectedVariantId(data.variants[0].id);
-        }
-      } catch (e) {
-        console.error('Lỗi load sản phẩm:', e);
-        const status = e.response?.status;
-        if (status === 404) setError('Sản phẩm không tồn tại.');
-        else if (status === 403) setError('Truy cập bị từ chối.');
-        else setError('Không thể tải sản phẩm. Vui lòng thử lại.');
-      } finally {
-        setLoading(false);
+  const fetchProduct = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await ProductCatalogService.getProductById(id);
+      setProduct(data);
+      if (data.variants && data.variants.length > 0) {
+        setSelectedVariantId(data.variants[0].id);
       }
-    };
-    loadProduct();
+    } catch (err) {
+      setError('Không thể tải thông tin sản phẩm');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
+  useEffect(() => {
+    fetchProduct();
+  }, [fetchProduct]);
+
+  useEffect(() => {
+    if (couponCode && selectedVariantId) {
+      ProductCatalogService.previewDiscount(selectedVariantId, couponCode)
+          .then(setDiscountedPrice)
+          .catch(() => setDiscountedPrice(null));
+    } else {
+      setDiscountedPrice(null);
+    }
+  }, [couponCode, selectedVariantId]);
+
   const selectedVariant = useMemo(() => {
-    return product?.variants?.find(v => v.id === selectedVariantId) ?? null;
+    return product?.variants?.find(v => v.id === selectedVariantId);
   }, [product, selectedVariantId]);
 
-  const handleAddToCart = useCallback(async () => {
-    if (!selectedVariant || selectedVariant.stockQuantity < quantity) {
-      message.warning('Sản phẩm không đủ số lượng');
+  const handleAddToCart = async () => {
+    if (!selectedVariant) {
+      message.error('Vui lòng chọn biến thể');
       return;
     }
     try {
-      await addItem({ variantId: selectedVariantId, quantity });
-      message.success('Đã thêm vào giỏ hàng!');
-    } catch (e) {
-      message.error('Không thể thêm vào giỏ');
+      await addItem(null, { variantId: selectedVariant.id, quantity });
+      message.success('Đã thêm vào giỏ hàng');
+    } catch (err) {
+      message.error('Lỗi khi thêm vào giỏ hàng');
     }
-  }, [selectedVariant, selectedVariantId, quantity, addItem]);
+  };
 
-  const handleFavorite = useCallback(async () => {
-    if (!isAuthenticated) {
-      message.warning('Vui lòng đăng nhập');
-      return;
-    }
-    if (!product?.id) return;
+  const handleFavorite = async () => {
     try {
       await WishlistService.addToWishlist(product.id);
       message.success('Đã thêm vào yêu thích');
-    } catch (e) {
-      message.error('Lỗi yêu thích');
+    } catch (err) {
+      message.error('Lỗi khi thêm vào yêu thích');
     }
-  }, [isAuthenticated, product?.id]);
+  };
 
-  if (loading) {
-    return (
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" />
-        </div>
-    );
-  }
+  const images = useMemo(() => product?.images || [], [product]);
 
-  if (error) {
-    return <Alert message="Lỗi" description={error} type="error" showIcon style={{ margin: 24 }} />;
-  }
+  if (loading) return <Spin size="large" />;
+  if (error) return <Alert message={error} type="error" />;
+  if (!product) return <Alert message="Sản phẩm không tồn tại" type="warning" />;
 
-  if (!product) {
-    return <Alert message="Không tìm thấy sản phẩm" type="info" showIcon style={{ margin: 24 }} />;
-  }
+  const currentPrice = discountedPrice || selectedVariant?.salePrice || selectedVariant?.price;
 
   return (
-      <div style={{ padding: 24, background: '#f9f9f9' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
         <Row gutter={32}>
-          <Col xs={24} lg={12}>
-            <Card bordered={false}>
+          <Col span={12}>
+            <Image.PreviewGroup>
               <Image
-                  width="100%"
-                  src={selectedVariant?.images?.[0]?.url || product.defaultImage}
-                  fallback="https://via.placeholder.com/500?text=No+Image"
-                  style={{ borderRadius: 8, objectFit: 'cover' }}
+                  src={images[0]?.url || product.defaultImage}
+                  alt={product.name}
+                  style={{ width: '100%', marginBottom: 16 }}
               />
-            </Card>
+              <Row gutter={8}>
+                {images.slice(1).map(img => (
+                    <Col span={6} key={img.id}>
+                      <Image src={img.url} alt={img.altText} />
+                    </Col>
+                ))}
+              </Row>
+            </Image.PreviewGroup>
           </Col>
-          <Col xs={24} lg={12}>
-            <Card bordered={false}>
+          <Col span={12}>
+            <Card>
               <Title level={2}>{product.name}</Title>
-              <Space size="small">
-                <Tag color="blue">{product.brand?.name || 'N/A'}</Tag>
-                <Tag color="green">{product.category?.name || 'N/A'}</Tag>
-              </Space>
-              <div style={{ fontSize: 24, fontWeight: 'bold', color: '#d4380d', margin: '16px 0' }}>
-                {(selectedVariant?.salePrice ?? selectedVariant?.price ?? 0).toLocaleString('vi-VN')} ₫
-              </div>
               <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Search
+                    placeholder="Nhập mã giảm giá"
+                    onSearch={(value) => setCouponCode(value)}
+                    allowClear
+                    enterButton="Áp dụng"
+                />
                 <div>
-                  <Text strong>Biến thể:</Text>
-                  <Select
-                      style={{ width: '100%', marginTop: 8 }}
-                      value={selectedVariantId}
-                      onChange={setSelectedVariantId}
-                      placeholder="Chọn kích thước/màu sắc"
-                  >
-                    {product.variants.map(v => (
-                        <Option key={v.id} value={v.id} disabled={v.stockQuantity === 0}>
-                          <Space>
-                            {v.sku}
-                            <Text type="secondary">{v.attributes}</Text>
-                            {v.stockQuantity === 0 && <Tag color="red">Hết hàng</Tag>}
-                          </Space>
-                        </Option>
-                    ))}
-                  </Select>
+                  {discountedPrice ? (
+                      <>
+                        <del>{selectedVariant.price.toLocaleString()} ₫</del>
+                        <Title level={3} style={{ color: 'red' }}>{discountedPrice.toLocaleString()} ₫</Title>
+                        <Tag color="red">Đã áp mã {couponCode}</Tag>
+                      </>
+                  ) : selectedVariant?.salePrice ? (
+                      <>
+                        <del>{selectedVariant.price.toLocaleString()} ₫</del>
+                        <Title level={3} style={{ color: 'red' }}>{selectedVariant.salePrice.toLocaleString()} ₫</Title>
+                      </>
+                  ) : (
+                      <Title level={3}>{selectedVariant?.price.toLocaleString()} ₫</Title>
+                  )}
+                  {product.averageRating > 0 && (
+                      <Tag color="gold">⭐ {product.averageRating.toFixed(1)} ({product.reviewCount})</Tag>
+                  )}
                 </div>
-                <div>
-                  <Text strong>Số lượng:</Text>
-                  <InputNumber
-                      min={1}
-                      max={selectedVariant?.stockQuantity ?? 1}
-                      value={quantity}
-                      onChange={(value) => setQuantity(value ?? 1)}
-                      style={{ marginLeft: 12, width: 120 }}
-                      addonAfter="cái"
-                  />
-                  <Text type="secondary" style={{ marginLeft: 8 }}>
-                    (Còn {selectedVariant?.stockQuantity ?? 0})
-                  </Text>
-                </div>
+                <Text>{product.description}</Text>
+                <Select
+                    style={{ width: '100%' }}
+                    value={selectedVariantId}
+                    onChange={setSelectedVariantId}
+                >
+                  {product.variants.map(v => (
+                      <Option key={v.id} value={v.id}>
+                        {v.attributes} - {v.stockQuantity > 0 ? 'Còn hàng' : 'Hết hàng'}
+                      </Option>
+                  ))}
+                </Select>
+                <InputNumber
+                    min={1}
+                    max={selectedVariant?.stockQuantity || 0}
+                    value={quantity}
+                    onChange={setQuantity}
+                />
+                <Text type="secondary">
+                  (Còn {selectedVariant?.stockQuantity ?? 0})
+                </Text>
                 <Space size="middle">
                   <Button
                       type="primary"
