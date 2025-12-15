@@ -97,15 +97,15 @@ const ReportDashboard = () => {
                 <Card>
                     <Space align="center">
                         <RangePicker
-                            value={tempRangeRef.current}    // FIX QUAN TRỌNG NHẤT
+                            value={tempRangeRef.current}
                             format="DD/MM/YYYY"
                             allowClear={false}
                             getPopupContainer={trigger => trigger.parentNode}
-
-                            // chỉ update ref — không re-render → không nhảy năm
                             onChange={(dates) => {
                                 if (dates && dates[0] && dates[1]) {
                                     tempRangeRef.current = dates;
+                                    // Tự động apply luôn
+                                    setSelectedRange([...dates]);
                                 }
                             }}
 

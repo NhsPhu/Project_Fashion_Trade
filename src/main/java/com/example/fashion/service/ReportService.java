@@ -39,7 +39,10 @@ public class ReportService {
 
         for (Order o : orders) {
             LocalDate date = o.getCreatedAt().toLocalDate();
-            BigDecimal amount = o.getFinalAmount() != null ? o.getFinalAmount() : BigDecimal.ZERO;
+
+            BigDecimal amount = o.getFinalAmount() != null ? o.getFinalAmount() :
+                    (o.getTotalAmount() != null ? o.getTotalAmount() : BigDecimal.ZERO);
+
             revenueMap.merge(date, amount, BigDecimal::add);
             orderCountMap.merge(date, 1L, Long::sum);
         }
@@ -55,7 +58,8 @@ public class ReportService {
             cur = cur.plusDays(1);
         }
 
-        BigDecimal total = revenueMap.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal total = revenueMap.values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return ReportResponseDTO.RevenueReport.builder()
                 .period(period)
@@ -65,40 +69,57 @@ public class ReportService {
                 .build();
     }
 
+    // ======================= THỐNG KÊ ĐƠN HÀNG =======================
     public ReportResponseDTO.OrderReport getOrderReport(LocalDateTime start, LocalDateTime end) {
         List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
         return ReportResponseDTO.OrderReport.builder()
                 .total((long) orders.size())
-                .completed(orders.stream().filter(o -> Set.of("PAID", "SHIPPED", "DELIVERED", "DONE", "COMPLETED").contains(o.getOrderStatus())).count())
-                .cancelled(orders.stream().filter(o -> "CANCELLED".equals(o.getOrderStatus())).count())
-                .pending(orders.stream().filter(o -> Set.of("PENDING", "PROCESSING", "CREATED").contains(o.getOrderStatus())).count())
+                .completed(orders.stream()
+                        .filter(o -> Set.of("PAID", "SHIPPED", "DELIVERED", "DONE", "COMPLETED")
+                                .contains(o.getOrderStatus()))
+                        .count())
+                .cancelled(orders.stream()
+                        .filter(o -> "CANCELLED".equals(o.getOrderStatus()))
+                        .count())
+                .pending(orders.stream()
+                        .filter(o -> Set.of("PENDING", "PROCESSING", "CREATED")
+                                .contains(o.getOrderStatus()))
+                        .count())
                 .build();
     }
 
-    // ======================= TOP SẢN PHẨM – TỪ 5 SP TRỞ LÊN =======================
+    // ======================= TOP SẢN PHẨM BÁN CHẠY =======================
     public List<ReportResponseDTO.TopProduct> getTopProducts(int limit) {
+        // Group bằng variant, tính tổng số lượng bán và doanh thu
         return orderItemRepository.findAll().stream()
-                .filter(oi -> oi.getVariant() != null && oi.getVariant().getProduct() != null)
-                .collect(Collectors.groupingBy(OrderItem::getVariant, Collectors.summingInt(OrderItem::getQuantity)))
+                .collect(Collectors.groupingBy(
+                        OrderItem::getVariant,
+                        Collectors.summingInt(OrderItem::getQuantity)
+                ))
                 .entrySet().stream()
-                .filter(e -> e.getValue() >= 5)
                 .sorted(Map.Entry.<ProductVariant, Integer>comparingByValue().reversed())
                 .limit(limit)
-                .map(e -> {
-                    ProductVariant v = e.getKey();
-                    int sold = e.getValue();
-                    double revenue = sold * (v.getPrice() != null ? v.getPrice().doubleValue() : 0);
+                .map(entry -> {
+                    ProductVariant variant = entry.getKey();
+                    Integer soldQuantity = entry.getValue();
+
+                    // Tính doanh thu cho variant này (subtotal từ order items)
+                    BigDecimal revenue = orderItemRepository.findByVariant(variant).stream()
+                            .map(oi -> oi.getSubtotal() != null ? oi.getSubtotal() : BigDecimal.ZERO)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
                     return ReportResponseDTO.TopProduct.builder()
-                            .productName(v.getProduct().getName())
-                            .sku(v.getSku())
-                            .soldQuantity(sold)
-                            .revenue(revenue)
+                            .productId(variant.getProduct().getId())
+                            .productName(variant.getProduct().getName())
+                            .sku(variant.getSku())
+                            .soldQuantity(soldQuantity)
+                            .revenue(revenue.doubleValue())
                             .build();
                 })
                 .collect(Collectors.toList());
     }
 
-    // ======================= TỒN KHO THẤP – HIỆN ĐẦY ĐỦ 19 SP =======================
+    // ======================= TỒN KHO THẤP =======================
     public List<ReportResponseDTO.LowStockItem> getLowStock() {
         return inventoryRepository.findAll().stream()
                 .filter(inv -> inv.getQuantity() <= 10)
@@ -112,148 +133,164 @@ public class ReportService {
                 .collect(Collectors.toList());
     }
 
+    // ======================= THỐNG KÊ KHÁCH HÀNG =======================
     public ReportResponseDTO.CustomerReport getCustomerReport(LocalDateTime start, LocalDateTime end) {
-        long newCust = userRepository.countByCreatedAtBetween(start, end);
-        long totalOrders = orderRepository.countByCreatedAtBetween(start, end);
+        List<Order> ordersInPeriod = orderRepository.findByCreatedAtBetween(start, end);
+        long totalOrders = ordersInPeriod.size();
         long totalUsers = userRepository.count();
-        double rate = totalUsers > 0 ? (double) totalOrders / totalUsers * 100 : 0;
+
+        long newCustomers = ordersInPeriod.stream()
+                .map(Order::getUser)
+                .filter(Objects::nonNull)
+                .map(User::getId)
+                .distinct()
+                .count();
+
+        double conversionRate = totalOrders > 0 ? (double) newCustomers / totalOrders * 100 : 0.0;
 
         return ReportResponseDTO.CustomerReport.builder()
-                .newCustomers((int) newCust)
+                .newCustomers((int) newCustomers)
+                .conversionRate(conversionRate)
                 .totalUsers(totalUsers)
                 .totalOrders(totalOrders)
-                .conversionRate(Math.round(rate * 100.0) / 100.0)
                 .build();
     }
 
-    // ======================= XUẤT EXCEL =======================
+    // ======================= XUẤT EXCEL - ĐÃ THÊM 2 SHEET MỚI =======================
     public byte[] generateExcelReport(String type, LocalDateTime start, LocalDateTime end) {
-        try (Workbook wb = new XSSFWorkbook();
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-
-            generateFullReport(wb, start, end);
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            if ("full".equalsIgnoreCase(type)) {
+                generateRevenueSheet(wb, start, end);
+                generateOrdersSheet(wb, start, end);  // THÊM: Sheet Đơn hàng
+                generateOrderItemsSheet(wb, start, end);  // THÊM: Sheet Chi tiết SP
+                generateTopProductsSheet(wb);
+                generateLowStockSheet(wb);
+                generateCustomerSheet(wb, start, end);
+            }
             wb.write(out);
             return out.toByteArray();
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi tạo Excel: " + e.getMessage(), e);
+            throw new RuntimeException("Lỗi tạo file Excel", e);
         }
     }
 
-    private void generateFullReport(Workbook wb, LocalDateTime start, LocalDateTime end) {
-        generateRevenueSheet(wb, start, end);
-        generateOrdersSheet(wb, start, end);
-        generateOrderItemsSheet(wb, start, end);
-        generateTopProductsSheet(wb);
-        generateLowStockSheet(wb);
-        generateCustomerSheet(wb, start, end);
-    }
-
-    // ==================== CÁC SHEET – ĐÃ ĐẦY ĐỦ =====================
     private void generateRevenueSheet(Workbook wb, LocalDateTime start, LocalDateTime end) {
-        ReportResponseDTO.RevenueReport r = getRevenueReport("day", start, end);
+        ReportResponseDTO.RevenueReport report = getRevenueReport("day", start, end);
         Sheet sheet = wb.createSheet("Doanh thu");
-
         CellStyle money = wb.createCellStyle();
-        money.setDataFormat(wb.createDataFormat().getFormat("#,##0"));
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DataFormat format = wb.createDataFormat();
+        money.setDataFormat(format.getFormat("#,##0"));
 
         int row = 0;
-        sheet.createRow(row++).createCell(0).setCellValue("DOANH THU THEO NGÀY");
-        Row h = sheet.createRow(row++);
-        h.createCell(0).setCellValue("Ngày"); h.createCell(1).setCellValue("Doanh thu"); h.createCell(2).setCellValue("Số đơn");
+        sheet.createRow(row++).createCell(0).setCellValue("BÁO CÁO DOANH THU");
+        sheet.createRow(row++).createCell(0).setCellValue("Từ ngày: " + start.toLocalDate() + " đến " + end.toLocalDate());
+        sheet.createRow(row++).createCell(0).setCellValue("Tổng doanh thu"); sheet.getRow(row - 1).createCell(1).setCellValue(report.getTotalRevenue());
+        sheet.getRow(row - 1).getCell(1).setCellStyle(money);
+        sheet.createRow(row++).createCell(0).setCellValue("Tổng đơn hàng"); sheet.getRow(row - 1).createCell(1).setCellValue(report.getTotalOrders());
 
-        for (ReportResponseDTO.DailyRevenue d : r.getBreakdown()) {
-            if (d.getRevenue() > 0 || d.getOrders() > 0) {
-                Row rx = sheet.createRow(row++);
-                rx.createCell(0).setCellValue(d.getDate().format(df));
-                Cell c = rx.createCell(1); c.setCellValue(d.getRevenue()); c.setCellStyle(money);
-                rx.createCell(2).setCellValue(d.getOrders());
-            }
+        row++;
+        Row header = sheet.createRow(row++);
+        header.createCell(0).setCellValue("Ngày");
+        header.createCell(1).setCellValue("Doanh thu");
+        header.createCell(2).setCellValue("Số đơn");
+
+        for (ReportResponseDTO.DailyRevenue d : report.getBreakdown()) {
+            Row r = sheet.createRow(row++);
+            r.createCell(0).setCellValue(d.getDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            Cell c = r.createCell(1); c.setCellValue(d.getRevenue()); c.setCellStyle(money);
+            r.createCell(2).setCellValue(d.getOrders());
         }
-        Row tot = sheet.createRow(row++);
-        tot.createCell(0).setCellValue("TỔNG");
-        Cell t = tot.createCell(1); t.setCellValue(r.getTotalRevenue()); t.setCellStyle(money);
-        tot.createCell(2).setCellValue(r.getTotalOrders());
         for (int i = 0; i < 3; i++) sheet.autoSizeColumn(i);
     }
 
+    // THÊM MỚI: Sheet Đơn hàng (tương tự file 17)
     private void generateOrdersSheet(Workbook wb, LocalDateTime start, LocalDateTime end) {
-        List<Order> list = orderRepository.findByCreatedAtBetween(start, end);
+        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
         Sheet sheet = wb.createSheet("Đơn hàng");
 
         CellStyle money = wb.createCellStyle();
-        money.setDataFormat(wb.createDataFormat().getFormat("#,##0"));
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        DataFormat format = wb.createDataFormat();
+        money.setDataFormat(format.getFormat("#,##0"));
 
         int row = 0;
         sheet.createRow(row++).createCell(0).setCellValue("DANH SÁCH ĐƠN HÀNG");
-        Row h = sheet.createRow(row++);
-        String[] cols = {"Mã đơn","Ngày","Khách","SĐT","Trạng thái","Tổng tiền","Phí ship","Giảm giá","Ghi chú"};
-        for (int i = 0; i < cols.length; i++) h.createCell(i).setCellValue(cols[i]);
 
-        for (Order o : list) {
-            Row rx = sheet.createRow(row++);
-            rx.createCell(0).setCellValue(o.getOrderNo());
-            rx.createCell(1).setCellValue(o.getCreatedAt().format(df));
-            rx.createCell(2).setCellValue(o.getCustomerName() != null ? o.getCustomerName() : "Khách lẻ");
-            rx.createCell(3).setCellValue(o.getShippingPhone() != null ? o.getShippingPhone() : "");
-            rx.createCell(4).setCellValue(formatStatus(o.getOrderStatus()));
+        Row header = sheet.createRow(row++);
+        header.createCell(0).setCellValue("Mã đơn");
+        header.createCell(1).setCellValue("Ngày");
+        header.createCell(2).setCellValue("Khách");
+        header.createCell(3).setCellValue("SĐT");
+        header.createCell(4).setCellValue("Trạng thái");
+        header.createCell(5).setCellValue("Tổng tiền");
+        header.createCell(6).setCellValue("Phí ship");
+        header.createCell(7).setCellValue("Giảm giá");
+        header.createCell(8).setCellValue("Ghi chú");
 
-            Cell tot = rx.createCell(5); tot.setCellValue(o.getFinalAmount() != null ? o.getFinalAmount().doubleValue() : 0); tot.setCellStyle(money);
-            Cell ship = rx.createCell(6); ship.setCellValue(o.getShippingFee() != null ? o.getShippingFee().doubleValue() : 0); ship.setCellStyle(money);
-            Cell disc = rx.createCell(7); disc.setCellValue(o.getDiscountAmount() != null ? o.getDiscountAmount().doubleValue() : 0); disc.setCellStyle(money);
-
-            try {
-                java.lang.reflect.Method m = o.getClass().getMethod("getNote");
-                String note = (String) m.invoke(o);
-                rx.createCell(8).setCellValue(note != null ? note : "");
-            } catch (Exception ignored) {
-                rx.createCell(8).setCellValue("");
-            }
+        for (Order o : orders) {
+            Row r = sheet.createRow(row++);
+            r.createCell(0).setCellValue(o.getOrderNo() != null ? o.getOrderNo() : "ORD-" + o.getId());
+            r.createCell(1).setCellValue(o.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+            r.createCell(2).setCellValue(o.getCustomerName() != null ? o.getCustomerName() : "Khách lẻ");
+            r.createCell(3).setCellValue(o.getShippingPhone() != null ? o.getShippingPhone() : "");
+            r.createCell(4).setCellValue(formatStatus(o.getOrderStatus()));
+            Cell total = r.createCell(5); total.setCellValue(o.getFinalAmount() != null ? o.getFinalAmount().doubleValue() : (o.getTotalAmount() != null ? o.getTotalAmount().doubleValue() : 0)); total.setCellStyle(money);
+            Cell ship = r.createCell(6); ship.setCellValue(o.getShippingFee() != null ? o.getShippingFee().doubleValue() : 0); ship.setCellStyle(money);
+            Cell disc = r.createCell(7); disc.setCellValue(o.getDiscountAmount() != null ? o.getDiscountAmount().doubleValue() : 0); disc.setCellStyle(money);
+            r.createCell(8).setCellValue("");  // Ghi chú nếu có
         }
-        for (int i = 0; i < cols.length; i++) sheet.autoSizeColumn(i);
+
+        for (int i = 0; i < 9; i++) sheet.autoSizeColumn(i);
     }
 
+    // THÊM MỚI: Sheet Chi tiết SP (tương tự file 17)
     private void generateOrderItemsSheet(Workbook wb, LocalDateTime start, LocalDateTime end) {
-        List<Order> list = orderRepository.findByCreatedAtBetween(start, end);
+        List<Order> orders = orderRepository.findByCreatedAtBetween(start, end);
+        List<OrderItem> items = orders.stream().flatMap(o -> o.getItems().stream()).collect(Collectors.toList());
         Sheet sheet = wb.createSheet("Chi tiết SP");
 
         CellStyle money = wb.createCellStyle();
-        money.setDataFormat(wb.createDataFormat().getFormat("#,##0"));
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        DataFormat format = wb.createDataFormat();
+        money.setDataFormat(format.getFormat("#,##0"));
 
         int row = 0;
         sheet.createRow(row++).createCell(0).setCellValue("CHI TIẾT SẢN PHẨM TRONG ĐƠN");
-        Row h = sheet.createRow(row++);
-        String[] cols = {"Mã đơn","Ngày","Sản phẩm","SL","Giá","Thành tiền"};
-        for (int i = 0; i < cols.length; i++) h.createCell(i).setCellValue(cols[i]);
 
-        for (Order o : list) {
-            for (OrderItem oi : o.getItems()) {
-                Row rx = sheet.createRow(row++);
-                rx.createCell(0).setCellValue(o.getOrderNo());
-                rx.createCell(1).setCellValue(o.getCreatedAt().format(df));
-                rx.createCell(2).setCellValue(oi.getProductName());
-                rx.createCell(3).setCellValue(oi.getQuantity());
-                Cell p = rx.createCell(4); p.setCellValue(oi.getUnitPrice().doubleValue()); p.setCellStyle(money);
-                Cell t = rx.createCell(5); t.setCellValue(oi.getSubtotal().doubleValue()); t.setCellStyle(money);
-            }
+        Row header = sheet.createRow(row++);
+        header.createCell(0).setCellValue("Mã đơn");
+        header.createCell(1).setCellValue("Ngày");
+        header.createCell(2).setCellValue("Sản phẩm");
+        header.createCell(3).setCellValue("SL");
+        header.createCell(4).setCellValue("Giá");
+        header.createCell(5).setCellValue("Thành tiền");
+
+        for (OrderItem oi : items) {
+            Order o = oi.getOrder();
+            Row r = sheet.createRow(row++);
+            r.createCell(0).setCellValue(o.getOrderNo() != null ? o.getOrderNo() : "ORD-" + o.getId());
+            r.createCell(1).setCellValue(o.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+            r.createCell(2).setCellValue(oi.getProductName() != null ? oi.getProductName() : "");
+            r.createCell(3).setCellValue(oi.getQuantity() != null ? oi.getQuantity() : 0);
+            Cell price = r.createCell(4); price.setCellValue(oi.getUnitPrice() != null ? oi.getUnitPrice().doubleValue() : 0); price.setCellStyle(money);
+            Cell sub = r.createCell(5); sub.setCellValue(oi.getSubtotal() != null ? oi.getSubtotal().doubleValue() : 0); sub.setCellStyle(money);
         }
-        for (int i = 0; i < cols.length; i++) sheet.autoSizeColumn(i);
+
+        for (int i = 0; i < 6; i++) sheet.autoSizeColumn(i);
     }
 
     private void generateTopProductsSheet(Workbook wb) {
-        List<ReportResponseDTO.TopProduct> list = getTopProducts(20);
+        List<ReportResponseDTO.TopProduct> list = getTopProducts(10);
         Sheet sheet = wb.createSheet("Top sản phẩm");
 
         CellStyle money = wb.createCellStyle();
-        money.setDataFormat(wb.createDataFormat().getFormat("#,##0"));
+        DataFormat format = wb.createDataFormat();
+        money.setDataFormat(format.getFormat("#,##0"));
 
         int row = 0;
-        sheet.createRow(row++).createCell(0).setCellValue("TOP 20 SẢN PHẨM BÁN CHẠY (từ 5 sp trở lên)");
+        sheet.createRow(row++).createCell(0).setCellValue("TOP 10 SẢN PHẨM BÁN CHẠY");
         Row h = sheet.createRow(row++);
-        h.createCell(0).setCellValue("STT"); h.createCell(1).setCellValue("Sản phẩm"); h.createCell(2).setCellValue("SKU");
-        h.createCell(3).setCellValue("SL bán"); h.createCell(4).setCellValue("Doanh thu");
+        h.createCell(0).setCellValue("STT"); h.createCell(1).setCellValue("Sản phẩm");
+        h.createCell(2).setCellValue("SKU"); h.createCell(3).setCellValue("SL bán");
+        h.createCell(4).setCellValue("Doanh thu");
 
         int stt = 1;
         for (ReportResponseDTO.TopProduct p : list) {
@@ -308,9 +345,10 @@ public class ReportService {
 
         int row = 0;
         sheet.createRow(row++).createCell(0).setCellValue("THỐNG KÊ KHÁCH HÀNG");
+        sheet.createRow(row++).createCell(0).setCellValue("Khoảng thời gian: " + start.toLocalDate() + " → " + end.toLocalDate());
         sheet.createRow(row++).createCell(0).setCellValue("Khách mới");   sheet.getRow(row-1).createCell(1).setCellValue(r.getNewCustomers());
         sheet.createRow(row++).createCell(0).setCellValue("Tổng khách"); sheet.getRow(row-1).createCell(1).setCellValue(r.getTotalUsers());
-        sheet.createRow(row++).createCell(0).setCellValue("Tỷ lệ chuyển đổi"); sheet.getRow(row-1).createCell(1).setCellValue(r.getConversionRate() + "%");
+        sheet.createRow(row++).createCell(0).setCellValue("Tỷ lệ chuyển đổi"); sheet.getRow(row-1).createCell(1).setCellValue(String.format("%.2f%%", r.getConversionRate()));
 
         for (int i = 0; i < 2; i++) sheet.autoSizeColumn(i);
     }
